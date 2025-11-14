@@ -130,8 +130,8 @@ class ShoverWorldEnv(Env):
         self.initial_stamina = initial_stamina
         self.max_timestep = max_timestep
         self.map_path = map_path
-        self.render_mode
-
+        self.render_mode = render_mode
+        
         # to be initialized in env.reset()
         self.map = None
         self.shover_pos = None
