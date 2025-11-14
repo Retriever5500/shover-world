@@ -1,15 +1,15 @@
 from gymnasium import *
 import numpy as np
 
-class Block:
+class Square:
     """
-    The class for representing any of the blocks (`Lavas`, `Boxes`, `Empty Spaces`, and `Barriers`) in the map of `ShoverWorldEnv`.
+    The class for representing any of the squares (`Lavas`, `Boxes`, `Empty Spaces`, and `Barriers`) in the map of `ShoverWorldEnv`.
 
     Args:
         val (int): 
-            Integer representation of the block. -100 for `Lava`, 0 for `Empty`, 1-10 for `Box`, and 100 for `Barrier`.
+            Integer representation of the square. -100 for `Lava`, 0 for `Empty`, 1-10 for `Box`, and 100 for `Barrier`.
         btype (str):
-            Name of the block. one of the values `Lava`, `Empty`, `Box`, or `Barrier`.
+            Name of the square. one of the values `Lava`, `Empty`, `Box`, or `Barrier`.
     """ 
     def __init__(self, val, btype):
         self.val = val
@@ -20,9 +20,9 @@ class Block:
     def __str__(self):
         return self.val
     
-    def get_block_type(self):
+    def get_square_type(self):
         """
-        Returns the block type of the instance, which can be any of `Box`, `Barrier`, `Lava`, or `Empty`.
+        Returns the square type of the instance, which can be any of `Box`, `Barrier`, `Lava`, or `Empty`.
         """
         return self.btype
     
@@ -196,18 +196,18 @@ class ShoverWorldEnv(Env):
             
             # in-bounds move
             else:
-                target_obj_block_type = target_obj.get_block_type()
+                target_obj_square_type = target_obj.get_square_type()
 
-                # moving to a Empty block
-                if target_obj_block_type == 'Empty':
+                # moving to a Empty square
+                if target_obj_square_type == 'Empty':
                     is_action_valid = True
                     self.shover_pos = (target_x, target_y)
                 
-                # moving to a Barrier or Lava block
-                elif target_obj_block_type in ['Barrier', 'Lava']:
+                # moving to a Barrier or Lava square
+                elif target_obj_square_type in ['Barrier', 'Lava']:
                     is_action_valid = False
 
-                # moving to a Box block (pushing a Box)
+                # moving to a Box square (pushing a Box)
                 else:
                     # TODO: the logic for pusing a Box.
                     is_action_valid = True
@@ -237,7 +237,7 @@ class ShoverWorldEnv(Env):
                                     'perfect_squares_available':perfect_squares_available}
 
     def _get_target_pos_after_move_action(start_x, start_y, action):
-        """Returns the x, y coordinates of the landing block after a move action.
+        """Returns the x, y coordinates of the landing square after a move action.
 
         Args:
             start_x (int): 
@@ -274,7 +274,7 @@ class ShoverWorldEnv(Env):
 
         Returns:
             map (list[list]): 
-                Map containing integers (representing barriers, lavas, or empty block) or instances of `ShoverBox` class.
+                Map containing integers (representing barriers, lavas, or empty square) or instances of `ShoverBox` class.
             shover_pos (tuple): 
                 A tuple representing pos of the shover as x, y coordinates. 
             curr_number_of_boxes (int): 
@@ -309,8 +309,8 @@ class ShoverWorldEnv(Env):
                 Number of hazardous lava cells placed during random map generation.
 
         Returns:
-            map (list[list[Block]]): 
-                Map containing instances of Block which represent the objects in the map.
+            map (list[list[Square]]): 
+                Map containing instances of Square which represent the objects in the map.
             shover_pos (tuple): 
                 A tuple representing pos of the shover as x, y coordinates.
             curr_number_of_boxes (int): 
@@ -336,7 +336,7 @@ class ShoverWorldEnv(Env):
             map (list[list[int]]): 
                 Integer representation of the map.
         """
-        return [[str(block) for block in row] for row in self.map]
+        return [[str(square) for square in row] for row in self.map]
     
     def _find_perfect_squares(self):
         """
