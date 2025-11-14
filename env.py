@@ -174,6 +174,96 @@ class ShoverWorldEnv(Env):
                                     'lava_destroyed_this_step':False, 
                                     'perfect_squares_available':[]}
     
+    def step(self, action):
+        assert self.action_space.contains(action), 'action should be contained in the environment\'s action space.'
+        
+        is_action_valid = None
+        chain_length_k = 0
+        initial_force_applied = False
+        lava_destroyed_this_step = False
+        perfect_squares_available = None
+        
+        shover_x, shover_y = self.shover_pos
+
+        # move-actions
+        if 1 <= action <= 4:
+            target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(shover_x, shover_y, action)
+            target_obj = self.map[target_x][target_y]
+            
+            # out-of-bounds move
+            if (target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols):
+                is_action_valid = False
+            
+            # in-bounds move
+            else:
+                target_obj_block_type = target_obj.get_block_type()
+
+                # moving to a Empty block
+                if target_obj_block_type == 'Empty':
+                    is_action_valid = True
+                    self.shover_pos = (target_x, target_y)
+                
+                # moving to a Barrier or Lava block
+                elif target_obj_block_type in ['Barrier', 'Lava']:
+                    is_action_valid = False
+
+                # moving to a Box block (pushing a Box)
+                else:
+                    # TODO: the logic for pusing a Box.
+                    is_action_valid = True
+        
+        # Hellify or Barrier Marker actions
+        else:
+            # Barrier Marker
+            if action == 5:
+                # TODO: the logic for Barrier Marker
+                pass
+            
+            # Hellify
+            else:
+                # TOOD: the logic for Hellify
+                pass
+
+        self.time_step += 1
+        perfect_squares_available = self._find_perfect_squares()
+
+        return self._get_map_repr(), {'timestep':self.time_step, 'stamina':self.stamina, 
+                                    'current_number_of_boxes':self.curr_number_of_boxes, 
+                                    'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
+                                    'last_action_valid':is_action_valid, 
+                                    'chain_length_k':chain_length_k, 
+                                    'initial_force_applied':initial_force_applied, 
+                                    'lava_destroyed_this_step':lava_destroyed_this_step, 
+                                    'perfect_squares_available':perfect_squares_available}
+
+    def _get_target_pos_after_move_action(start_x, start_y, action):
+        """Returns the x, y coordinates of the landing block after a move action.
+
+        Args:
+            start_x (int): 
+                x-coordinate of the starting position.
+            start_y (int): 
+                y-coordinate of the starting position.
+
+        Returns:
+            tuple[int, int]: A tuple containing (target_x, target_y), the coordinates
+                of the landing position after the move.
+        """
+        assert 1 <= action <= 4, "this function should only be used when the action is a move."
+        
+        target_x, target_y = start_x, start_y
+
+        if action == 1:
+            target_x -= 1
+        elif action == 2:
+            target_y += 1
+        elif action == 3:
+            target_x += 1
+        else:
+            target_y -= 1
+        
+        return target_x, target_y
+
     def _load_map(map_path):
         """
         Function for loading a map from a .txt file. Format A will be used.
