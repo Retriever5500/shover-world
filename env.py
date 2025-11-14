@@ -83,6 +83,15 @@ class ShoverWorldEnv(Env):
         map_path (str | None, default=None):
             Path to a predefined map file (e.g., ``.txt``). If provided,
             random map generation is skipped and this map is loaded instead.
+        action_map (dict[int, str], default={1:'up', \
+                                            2:'right', \
+                                            3:'down', \
+                                            4:'left', \
+                                            5:'barrier_marker', \
+                                            6:'hellify'}):
+            A dictionary, mapping action values to verbose descriptions; 
+            we will work with verbose descriptions rather than action values.
+
     """
     def __init__(self, initial_force, 
                 unit_force, 
@@ -95,7 +104,13 @@ class ShoverWorldEnv(Env):
                 initial_stamina=1000, 
                 max_timestep=400, 
                 map_path=None, 
-                render_mode='human'):
+                render_mode='human',
+                action_map={1:'up',
+                            2:'right',
+                            3:'down',
+                            4:'left',
+                            5:'barrier_marker',
+                            6:'hellify'}):
         
         self.metadata = {'render_modes':['human', None], 'render_fps':30}
         assert not (map_path != None and any(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas)), \
