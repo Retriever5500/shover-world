@@ -142,7 +142,7 @@ class ShoverWorldEnv(Env):
         self.curr_number_of_lavas = None
         self.destroyed_number_of_boxes = None
 
-        self.action_space = spaces.Discrete(start=1, n=6, dtype=int)
+        self.action_space = spaces.Tuple(spaces=[spaces.Box(shape=(2,), low=0, high=max(self.n_rows, self.n_cols) - 1, dtype=int), spaces.Discrete(start=1, n=6, dtype=int)])
         self.observation_space = spaces.Box(shape=(self.n_rows, self.n_cols,), low=-100, high=100, dtype=int)
 
     def reset(self, *, seed = None, options = None):
