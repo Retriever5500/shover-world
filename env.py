@@ -142,8 +142,11 @@ class ShoverWorldEnv(Env):
         self.destroyed_number_of_boxes = None
 
         self.action_space = spaces.Tuple(spaces=[spaces.Box(shape=(2,), low=0, high=max(self.n_rows, self.n_cols) - 1, dtype=int), spaces.Discrete(start=1, n=6, dtype=int)])
-        self.observation_space = spaces.Box(shape=(self.n_rows, self.n_cols,), low=-100, high=100, dtype=int)
-
+        self.observation_space = spaces.Dict(spaces={'map':spaces.Box(shape=(self.n_rows, self.n_cols,), low=-100, high=100, dtype=int), 
+                                                     'stamina':spaces.Box(shape=(1,), low=0, high=(2**63)-2, dtype=float),
+                                                     'prev_selected_pos':spaces.Box(shape=(2,), low=spaces.Box(shape=(2,), low=0, high=max(self.n_rows, self.n_cols) - 1, dtype=int)),
+                                                     'prev_selected_action':spaces.Discrete(start=1, n=6, dtype=int)})
+        
     def reset(self, *, seed = None, options = None):
         super().reset(seed=seed, options=options)
         if self.map_path:
@@ -164,14 +167,22 @@ class ShoverWorldEnv(Env):
         # TODO indentify perfect squares available
         perfect_squares_available = self._find_perfect_squares()
 
-        return self._get_map_repr(), {'timestep':self.time_step, 'stamina':self.stamina, 
-                                    'current_number_of_boxes':self.curr_number_of_boxes, 
-                                    'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
-                                    'last_action_valid':False, 
-                                    'chain_length_k':0, 
-                                    'initial_force_applied':False, 
-                                    'lava_destroyed_this_step':False, 
-                                    'perfect_squares_available':[]}
+        return {# observation
+                'map':self._get_map_repr(), 
+                'stamina':self.stamina,
+                'prev_selected_pos':(0, 0),
+                'prev_selected_action':(6)
+            }, \
+            {# info
+                'timestep':self.time_step,
+                'current_number_of_boxes':self.curr_number_of_boxes, 
+                'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
+                'last_action_valid':False, 
+                'chain_length_k':0, 
+                'initial_force_applied':False, 
+                'lava_destroyed_this_step':False, 
+                'perfect_squares_available':perfect_squares_available
+            }
     
     def step(self, action):
         assert self.action_space.contains(action), 'action should be contained in the environment\'s action space.'
@@ -181,12 +192,11 @@ class ShoverWorldEnv(Env):
         initial_force_applied = False
         lava_destroyed_this_step = False
         perfect_squares_available = None
+        selected_pos_x, selected_pos_y, selected_action = action[0][0], action[0][1], action[1]
         
-        shover_x, shover_y = self.shover_pos
-
         # move-actions
-        if 1 <= action <= 4:
-            target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(shover_x, shover_y, action)
+        if 1 <= selected_action <= 4:
+            target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(selected_pos_x, selected_pos_y, selected_action)
             target_obj = self.map[target_x][target_y]
             
             # out-of-bounds move
@@ -214,7 +224,7 @@ class ShoverWorldEnv(Env):
         # Hellify or Barrier Marker actions
         else:
             # Barrier Marker
-            if action == 5:
+            if selected_action == 5:
                 # TODO: the logic for Barrier Marker
                 pass
             
@@ -226,14 +236,22 @@ class ShoverWorldEnv(Env):
         self.time_step += 1
         perfect_squares_available = self._find_perfect_squares()
 
-        return self._get_map_repr(), {'timestep':self.time_step, 'stamina':self.stamina, 
-                                    'current_number_of_boxes':self.curr_number_of_boxes, 
-                                    'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
-                                    'last_action_valid':is_action_valid, 
-                                    'chain_length_k':chain_length_k, 
-                                    'initial_force_applied':initial_force_applied, 
-                                    'lava_destroyed_this_step':lava_destroyed_this_step, 
-                                    'perfect_squares_available':perfect_squares_available}
+        return {# observation
+                'map':self._get_map_repr(), 
+                'stamina':self.stamina,
+                'prev_selected_pos':(selected_pos_x, selected_pos_y),
+                'prev_selected_action':(selected_action)
+            }, \
+            {# info
+                'timestep':self.time_step,
+                'current_number_of_boxes':self.curr_number_of_boxes, 
+                'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
+                'last_action_valid':is_action_valid, 
+                'chain_length_k':chain_length_k, 
+                'initial_force_applied':initial_force_applied, 
+                'lava_destroyed_this_step':lava_destroyed_this_step, 
+                'perfect_squares_available':perfect_squares_available
+            }
 
     def _get_target_pos_after_move_action(start_x, start_y, action):
         """Returns the x, y coordinates of the landing square after a move action.
