@@ -134,7 +134,6 @@ class ShoverWorldEnv(Env):
         
         # to be initialized in env.reset()
         self.map = None
-        self.shover_pos = None
         self.time_step = None
         self.stamina = None
         self.curr_number_of_boxes = None
