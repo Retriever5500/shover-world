@@ -148,10 +148,10 @@ class ShoverWorldEnv(Env):
     def reset(self, *, seed = None, options = None):
         super().reset(seed=seed, options=options)
         if self.map_path:
-            self.map, self.shover_pos, self.curr_number_of_boxes, \
+            self.map, self.curr_number_of_boxes, \
                 self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._load_map(self.map_path)
         else:
-            self.map, self.shover_pos, self.curr_number_of_boxes, \
+            self.map, self.curr_number_of_boxes, \
                 self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._random_map_generation(self.np_random, 
                                                                                                                 self.n_rows, 
                                                                                                                 self.n_cols,
@@ -275,8 +275,6 @@ class ShoverWorldEnv(Env):
         Returns:
             map (list[list]): 
                 Map containing integers (representing barriers, lavas, or empty square) or instances of `ShoverBox` class.
-            shover_pos (tuple): 
-                A tuple representing pos of the shover as x, y coordinates. 
             curr_number_of_boxes (int): 
                 curr number of boxes in the map.
             curr_number_of_barriers (int): 
@@ -286,11 +284,10 @@ class ShoverWorldEnv(Env):
         """
         # TODO: load the map and shover pos
         map = None
-        shover_pos = None
         curr_number_of_boxes = None
         curr_number_of_barriers = None
         curr_number_of_lavas = None
-        return map, shover_pos, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
+        return map, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
 
     def _random_map_generation(PRNG, n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas):
         """
@@ -311,8 +308,6 @@ class ShoverWorldEnv(Env):
         Returns:
             map (list[list[Square]]): 
                 Map containing instances of Square which represent the objects in the map.
-            shover_pos (tuple): 
-                A tuple representing pos of the shover as x, y coordinates.
             curr_number_of_boxes (int): 
                 curr number of boxes in the map.
             curr_number_of_barriers (int): 
@@ -322,11 +317,10 @@ class ShoverWorldEnv(Env):
         """
         # TODO: generate a random map and place the shover
         map = None
-        shover_pos = None
         curr_number_of_boxes = None
         curr_number_of_barriers = None
         curr_number_of_lavas = None
-        return map, shover_pos, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
+        return map, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
 
     def _get_map_repr(self):
         """
