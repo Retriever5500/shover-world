@@ -267,8 +267,50 @@ class ShoverWorldEnv(Env):
             
             # Hellify
             else:
-                # TOOD: the logic for Hellify
-                pass
+                is_action_valid = False
+
+                # checking whether if these is at least a perfect square such that n > 2
+                perf_sqr_for_hellify_exists = False
+                for perf_sqr in self.perfect_squares_available_dict.keys():
+                    if perf_sqr[2] > 2:
+                        perf_sqr_for_hellify_exists = True
+                        is_action_valid = True
+                        break
+                
+                # if we have at least a perfect square such that n > 2:
+                if perf_sqr_for_hellify_exists:
+                    # find the oldest perfect square such that n > 2
+                    oldest_perf_sqr, oldest_age = None, None
+                    for perf_sqr, age in self.perfect_squares_available_dict.items():
+                        
+                        if perf_sqr[2] > 2: # n > 2
+                            if oldest_perf_sqr == None:
+                                oldest_perf_sqr, oldest_age = perf_sqr, age
+                        
+                            elif oldest_age < age:
+                                oldest_perf_sqr, oldest_age = perf_sqr, age
+
+                    # convert all Boxes on the outer ring to Empty squares, and others to Lava squares
+                    top_left_x, top_left_y, n = oldest_perf_sqr
+                    for i in range(top_left_x, top_left_x + n):
+                        for j in range(top_left_y, top_left_y + n):
+                            
+                            # if element lies on outer ring, convert it to Empty square
+                            if any(i == top_left_x, \
+                                   i == (top_left_x + n - 1), \
+                                   j == top_left_y, \
+                                   j == (top_left_y + n - 1)):
+                                
+                                self.map[i][j] = Square(val=0, btype='Empty')
+                                
+                            # else, element lies in the inner (n-2) * (n-2) perfect square. So, convert it to Lava square
+                            else:
+                                self.map[i][j] = Square(val=-100, btype='Lava')
+
+                    # update current number of Boxes and Lavas
+                    self.curr_number_of_boxes -= n * n
+                    self.destroyed_number_of_boxes += n * n
+                    self.curr_number_of_lavas += (n - 2) * (n - 2)
 
         self.time_step += 1
 
