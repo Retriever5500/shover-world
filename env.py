@@ -227,8 +227,43 @@ class ShoverWorldEnv(Env):
         else:
             # Barrier Marker
             if selected_action == 5:
-                # TODO: the logic for Barrier Marker
-                pass
+                is_action_valid = False
+
+                # checking whether if these is at least a perfect square such that n >= 2
+                perf_sqr_for_mark_exists = False
+                for perf_sqr in self.perfect_squares_available_dict.keys():
+                    if perf_sqr[2] >= 2:
+                        perf_sqr_for_mark_exists = True
+                        is_action_valid = True
+                        break
+                
+                # if we have at least a perfect square such that n >= 2:
+                if perf_sqr_for_mark_exists:
+
+                    # find the oldest perfect square such that n >= 2
+                    oldest_perf_sqr, oldest_age = None, None
+                    for perf_sqr, age in self.perfect_squares_available_dict.items():
+                        
+                        if perf_sqr[2] >= 2: # n >= 2
+                            if oldest_perf_sqr == None:
+                                oldest_perf_sqr, oldest_age = perf_sqr, age
+                        
+                            elif oldest_age < age:
+                                oldest_perf_sqr, oldest_age = perf_sqr, age
+
+                    # convert all of the Boxes inside the perfect square into Barriers
+                    top_left_x, top_left_y, n = oldest_perf_sqr
+                    for i in range(top_left_x, top_left_x + n):
+                        for j in range(top_left_y, top_left_y + n):
+                            self.map = Square(val=100, btype='Barrier')
+                        
+                    # increament stamina
+                    self.stamina += n * n
+
+                    # update current number of boxes, barriers, and destroyed number of boxes
+                    self.curr_number_of_boxes -= n * n
+                    self.curr_number_of_barriers += n * n
+                    self.destroyed_number_of_boxes += n * n
             
             # Hellify
             else:
