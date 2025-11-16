@@ -211,7 +211,7 @@ class ShoverWorldEnv(Env):
                 target_obj = self.map[target_x][target_y]
                 
                 # in-bounds move
-                if (target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols):
+                if not ((target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols)):
                     target_obj_square_type = target_obj.get_square_type()
 
                     # moving to a Empty square
