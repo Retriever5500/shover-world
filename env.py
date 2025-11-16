@@ -39,7 +39,7 @@ class Square:
         """
         assert self.btype == 'Box', "this function should only be used for Box btype."
         assert 1 <= d <= 4, "invalid direction for making the Box non-stationary."
-        self.non_stationary_d = 4
+        self.non_stationary_d = d
 
     def is_non_stationary_in_d(self, d):
         """
