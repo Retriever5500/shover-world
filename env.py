@@ -198,7 +198,17 @@ class ShoverWorldEnv(Env):
                             map[i][j].make_stationary()
                         else:
                             d = make_non_stationary_dict[(i, j)]
-                            map[i][j].make_non_stationary_in_d(d)    
+                            map[i][j].make_non_stationary_in_d(d)
+
+        def _automatic_disolution(perfect_squares_available_dict, map, perf_sq_initial_age):
+            for perf_sqr, age in perfect_squares_available_dict.items():
+                
+                if age >= perf_sq_initial_age:
+                    perf_sqr_top_left_x, perf_sqr_top_left_y, n = perf_sqr
+                    
+                    for i in range(perf_sqr_top_left_x, perf_sqr_top_left_x + n):
+                        for j in range(perf_sqr_top_left_y, perf_sqr_top_left_y + n):
+                            map[i][j] = Square(val=0, btype='Empty')
 
         assert self.action_space.contains(action), 'action should be contained in the environment\'s action space.'
         
@@ -531,6 +541,8 @@ class ShoverWorldEnv(Env):
             for perfect_square in perfect_squares_available_list:
                 if perfect_square not in self.perfect_squares_available_dict.keys():
                     self.perfect_squares_available_dict[perfect_square] = 0
+
+            _automatic_disolution(self.perfect_squares_available_dict, self.map, self.perf_sq_initial_age)
 
         # check for termination or truncation conditions
         if self.curr_number_of_boxes == 0 or self.stamina == 0:
