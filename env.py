@@ -133,6 +133,8 @@ class ShoverWorldEnv(Env):
         self.render_mode = render_mode
         
         # to be initialized in env.reset()
+        self.terminated = None
+        self.truncated = None
         self.map = None
         self.time_step = None
         self.stamina = None
@@ -150,6 +152,10 @@ class ShoverWorldEnv(Env):
         
     def reset(self, *, seed = None, options = None):
         super().reset(seed=seed, options=options)
+        
+        self.terminated = False
+        self.truncated = False
+
         if self.map_path:
             self.map, self.curr_number_of_boxes, \
                 self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._load_map(self.map_path)
@@ -190,145 +196,142 @@ class ShoverWorldEnv(Env):
     def step(self, action):
         assert self.action_space.contains(action), 'action should be contained in the environment\'s action space.'
         
-        is_action_valid = None
+        is_action_valid = False
         chain_length_k = 0
         initial_force_applied = False
         lava_destroyed_this_step = False
         selected_pos_x, selected_pos_y, selected_action = action[0][0], action[0][1], action[1]
         
-        # move-actions
-        if 1 <= selected_action <= 4:
-            target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(selected_pos_x, selected_pos_y, selected_action)
-            target_obj = self.map[target_x][target_y]
-            
-            # out-of-bounds move
-            if (target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols):
-                is_action_valid = False
-            
-            # in-bounds move
-            else:
-                target_obj_square_type = target_obj.get_square_type()
-
-                # moving to a Empty square
-                if target_obj_square_type == 'Empty':
-                    is_action_valid = True
-                    self.shover_pos = (target_x, target_y)
+        # when env.truncated == True, we allow further calls to env.step() (meaning that environment dynamics will work), 
+        # but we don't allow it when env.terminated == True (meaning that environment will be static for further steps).
+        if not self.terminated:
+            # move-actions
+            if 1 <= selected_action <= 4:
+                target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(selected_pos_x, selected_pos_y, selected_action)
+                target_obj = self.map[target_x][target_y]
                 
-                # moving to a Barrier or Lava square
-                elif target_obj_square_type in ['Barrier', 'Lava']:
-                    is_action_valid = False
+                # in-bounds move
+                if (target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols):
+                    target_obj_square_type = target_obj.get_square_type()
 
-                # moving to a Box square (pushing a Box)
-                else:
-                    # TODO: the logic for pusing a Box.
-                    is_action_valid = True
-        
-        # Hellify or Barrier Marker actions
-        else:
-            # Barrier Marker
-            if selected_action == 5:
-                is_action_valid = False
-
-                # checking whether if these is at least a perfect square such that n >= 2
-                perf_sqr_for_mark_exists = False
-                for perf_sqr in self.perfect_squares_available_dict.keys():
-                    if perf_sqr[2] >= 2:
-                        perf_sqr_for_mark_exists = True
+                    # moving to a Empty square
+                    if target_obj_square_type == 'Empty':
                         is_action_valid = True
-                        break
-                
-                # if we have at least a perfect square such that n >= 2:
-                if perf_sqr_for_mark_exists:
+                        self.shover_pos = (target_x, target_y)
 
-                    # find the oldest perfect square such that n >= 2
-                    oldest_perf_sqr, oldest_age = None, None
-                    for perf_sqr, age in self.perfect_squares_available_dict.items():
-                        
-                        if perf_sqr[2] >= 2: # n >= 2
-                            if oldest_perf_sqr == None:
-                                oldest_perf_sqr, oldest_age = perf_sqr, age
-                        
-                            elif oldest_age < age:
-                                oldest_perf_sqr, oldest_age = perf_sqr, age
-
-                    # convert all of the Boxes inside the perfect square into Barriers
-                    top_left_x, top_left_y, n = oldest_perf_sqr
-                    for i in range(top_left_x, top_left_x + n):
-                        for j in range(top_left_y, top_left_y + n):
-                            self.map = Square(val=100, btype='Barrier')
-                        
-                    # increament stamina
-                    self.stamina += n * n
-
-                    # update current number of boxes, barriers, and destroyed number of boxes
-                    self.curr_number_of_boxes -= n * n
-                    self.curr_number_of_barriers += n * n
-                    self.destroyed_number_of_boxes += n * n
-            
-            # Hellify
-            else:
-                is_action_valid = False
-
-                # checking whether if these is at least a perfect square such that n > 2
-                perf_sqr_for_hellify_exists = False
-                for perf_sqr in self.perfect_squares_available_dict.keys():
-                    if perf_sqr[2] > 2:
-                        perf_sqr_for_hellify_exists = True
+                    # moving to a Box square (pushing a Box)
+                    else:
+                        # TODO: the logic for pusing a Box.
                         is_action_valid = True
-                        break
-                
-                # if we have at least a perfect square such that n > 2:
-                if perf_sqr_for_hellify_exists:
-                    # find the oldest perfect square such that n > 2
-                    oldest_perf_sqr, oldest_age = None, None
-                    for perf_sqr, age in self.perfect_squares_available_dict.items():
-                        
-                        if perf_sqr[2] > 2: # n > 2
-                            if oldest_perf_sqr == None:
-                                oldest_perf_sqr, oldest_age = perf_sqr, age
-                        
-                            elif oldest_age < age:
-                                oldest_perf_sqr, oldest_age = perf_sqr, age
+            
+            # Hellify or Barrier Marker actions
+            else:
+                # Barrier Marker
+                if selected_action == 5:
+                    # checking whether if these is at least a perfect square such that n >= 2
+                    perf_sqr_for_mark_exists = False
+                    for perf_sqr in self.perfect_squares_available_dict.keys():
+                        if perf_sqr[2] >= 2:
+                            perf_sqr_for_mark_exists = True
+                            is_action_valid = True
+                            break
+                    
+                    # if we have at least a perfect square such that n >= 2:
+                    if perf_sqr_for_mark_exists:
 
-                    # convert all Boxes on the outer ring to Empty squares, and others to Lava squares
-                    top_left_x, top_left_y, n = oldest_perf_sqr
-                    for i in range(top_left_x, top_left_x + n):
-                        for j in range(top_left_y, top_left_y + n):
+                        # find the oldest perfect square such that n >= 2
+                        oldest_perf_sqr, oldest_age = None, None
+                        for perf_sqr, age in self.perfect_squares_available_dict.items():
                             
-                            # if element lies on outer ring, convert it to Empty square
-                            if any(i == top_left_x, \
-                                   i == (top_left_x + n - 1), \
-                                   j == top_left_y, \
-                                   j == (top_left_y + n - 1)):
+                            if perf_sqr[2] >= 2: # n >= 2
+                                if oldest_perf_sqr == None:
+                                    oldest_perf_sqr, oldest_age = perf_sqr, age
+                            
+                                elif oldest_age < age:
+                                    oldest_perf_sqr, oldest_age = perf_sqr, age
+
+                        # convert all of the Boxes inside the perfect square into Barriers
+                        top_left_x, top_left_y, n = oldest_perf_sqr
+                        for i in range(top_left_x, top_left_x + n):
+                            for j in range(top_left_y, top_left_y + n):
+                                self.map = Square(val=100, btype='Barrier')
+                            
+                        # increament stamina
+                        self.stamina += n * n
+
+                        # update current number of boxes, barriers, and destroyed number of boxes
+                        self.curr_number_of_boxes -= n * n
+                        self.curr_number_of_barriers += n * n
+                        self.destroyed_number_of_boxes += n * n
+                
+                # Hellify
+                else:
+                    # checking whether if these is at least a perfect square such that n > 2
+                    perf_sqr_for_hellify_exists = False
+                    for perf_sqr in self.perfect_squares_available_dict.keys():
+                        if perf_sqr[2] > 2:
+                            perf_sqr_for_hellify_exists = True
+                            is_action_valid = True
+                            break
+                    
+                    # if we have at least a perfect square such that n > 2:
+                    if perf_sqr_for_hellify_exists:
+                        # find the oldest perfect square such that n > 2
+                        oldest_perf_sqr, oldest_age = None, None
+                        for perf_sqr, age in self.perfect_squares_available_dict.items():
+                            
+                            if perf_sqr[2] > 2: # n > 2
+                                if oldest_perf_sqr == None:
+                                    oldest_perf_sqr, oldest_age = perf_sqr, age
+                            
+                                elif oldest_age < age:
+                                    oldest_perf_sqr, oldest_age = perf_sqr, age
+
+                        # convert all Boxes on the outer ring to Empty squares, and others to Lava squares
+                        top_left_x, top_left_y, n = oldest_perf_sqr
+                        for i in range(top_left_x, top_left_x + n):
+                            for j in range(top_left_y, top_left_y + n):
                                 
-                                self.map[i][j] = Square(val=0, btype='Empty')
-                                
-                            # else, element lies in the inner (n-2) * (n-2) perfect square. So, convert it to Lava square
-                            else:
-                                self.map[i][j] = Square(val=-100, btype='Lava')
+                                # if element lies on outer ring, convert it to Empty square
+                                if any(i == top_left_x, \
+                                    i == (top_left_x + n - 1), \
+                                    j == top_left_y, \
+                                    j == (top_left_y + n - 1)):
+                                    
+                                    self.map[i][j] = Square(val=0, btype='Empty')
+                                    
+                                # else, element lies in the inner (n-2) * (n-2) perfect square. So, convert it to Lava square
+                                else:
+                                    self.map[i][j] = Square(val=-100, btype='Lava')
 
-                    # update current number of Boxes and Lavas
-                    self.curr_number_of_boxes -= n * n
-                    self.destroyed_number_of_boxes += n * n
-                    self.curr_number_of_lavas += (n - 2) * (n - 2)
+                        # update current number of Boxes and Lavas
+                        self.curr_number_of_boxes -= n * n
+                        self.destroyed_number_of_boxes += n * n
+                        self.curr_number_of_lavas += (n - 2) * (n - 2)
 
-        self.time_step += 1
+            self.time_step += 1
 
-        perfect_squares_available_list = self._find_perfect_squares()
+            perfect_squares_available_list = self._find_perfect_squares()
 
-        # remove those previous perfect squares which are not available now
-        for perfect_square in self.perfect_squares_available_dict.keys():
-            if perfect_square not in perfect_squares_available_list:
-                self.perfect_squares_available_dict.pop(perfect_square)
+            # remove those previous perfect squares which are not available now
+            for perfect_square in self.perfect_squares_available_dict.keys():
+                if perfect_square not in perfect_squares_available_list:
+                    self.perfect_squares_available_dict.pop(perfect_square)
 
-        # increament the age of previous perfect squares which are available now 
-        for perfect_square in self.perfect_squares_available_dict.keys():
-            self.perfect_squares_available_dict[perfect_square] += 1
+            # increament the age of previous perfect squares which are available now 
+            for perfect_square in self.perfect_squares_available_dict.keys():
+                self.perfect_squares_available_dict[perfect_square] += 1
 
-        # add new created perfect squares
-        for perfect_square in perfect_squares_available_list:
-            if perfect_square not in self.perfect_squares_available_dict.keys():
-                self.perfect_squares_available_dict[perfect_square] = 0
+            # add new created perfect squares
+            for perfect_square in perfect_squares_available_list:
+                if perfect_square not in self.perfect_squares_available_dict.keys():
+                    self.perfect_squares_available_dict[perfect_square] = 0
+
+        # check for termination or truncation conditions
+        if self.curr_number_of_boxes == 0 or self.stamina == 0:
+            self.terminated = True
+        if self.time_step == self.max_timestep:
+            self.truncated = True
         
         return {# observation
                 'map':self._get_map_repr(), 
@@ -336,6 +339,8 @@ class ShoverWorldEnv(Env):
                 'prev_selected_pos':(selected_pos_x, selected_pos_y),
                 'prev_selected_action':(selected_action)
             }, \
+            self.terminated, \
+            self.truncated, \
             {# info
                 'timestep':self.time_step,
                 'current_number_of_boxes':self.curr_number_of_boxes, 
