@@ -251,7 +251,7 @@ class ShoverWorldEnv(Env):
         # add new created perfect squares
         for perfect_square in perfect_squares_available_list:
             if perfect_square not in self.perfect_squares_available_dict.keys():
-                self.perfect_squares_available_dict[perfect_square] = 1
+                self.perfect_squares_available_dict[perfect_square] = 0
         
         return {# observation
                 'map':self._get_map_repr(), 
