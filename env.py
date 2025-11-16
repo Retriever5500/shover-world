@@ -104,13 +104,7 @@ class ShoverWorldEnv(Env):
                 initial_stamina=1000, 
                 max_timestep=400, 
                 map_path=None, 
-                render_mode='human',
-                action_map={1:'up',
-                            2:'right',
-                            3:'down',
-                            4:'left',
-                            5:'barrier_marker',
-                            6:'hellify'}):
+                render_mode='human'):
         
         self.metadata = {'render_modes':['human', None], 'render_fps':30}
         assert not (map_path != None and any(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas)), \
