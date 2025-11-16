@@ -642,12 +642,59 @@ class ShoverWorldEnv(Env):
             curr_number_of_lavas (int): 
                 curr number of lavas in the map.
         """
-        # TODO: generate a random map and place the shover
-        map = None
-        curr_number_of_boxes = None
-        curr_number_of_barriers = None
-        curr_number_of_lavas = None
-        return map, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
+        map = [[Square(val=0, btype='Empty') for j in range(n_cols)] for i in range(n_rows)]
+        barrier_rand_x_posses = np.random.randint(size=(number_of_barriers, 1), low=0, high=n_rows)
+        barrier_rand_y_posses = np.random.randint(size=(number_of_barriers, 1), low=0, high=n_cols)
+        barrier_rand_posses = np.concatenate(barrier_rand_x_posses,
+                                             barrier_rand_y_posses,
+                                             axis=1)
+        succ_gen_barrier_rand_posses = set(barrier_rand_posses.tolist())
+
+        succ_gen_lava_rand_posses = set()
+        while len(succ_gen_lava_rand_posses) < number_of_lavas:
+            lava_rand_x_posses = np.random.randint(size=(number_of_lavas, 1), low=0, high=n_rows)
+            lava_rand_y_posses = np.random.randint(size=(number_of_lavas, 1), low=0, high=n_cols)
+            lava_rand_posses = np.concatenate(lava_rand_x_posses,
+                                              lava_rand_y_posses,
+                                              axis=1)
+            lava_rand_posses = set(lava_rand_posses.tolist())
+            lava_rand_posses = lava_rand_posses.difference(succ_gen_lava_rand_posses, succ_gen_barrier_rand_posses)
+
+            for i in range(min(number_of_lavas - len(succ_gen_lava_rand_posses), 
+                               len(lava_rand_posses))):
+                
+                _iter = iter(lava_rand_posses)
+                succ_gen_lava_rand_posses.add(next(_iter))
+
+        succ_gen_box_rand_posses = set()
+        while len(succ_gen_box_rand_posses) < number_of_boxes:
+            box_rand_x_posses = np.random.randint(size=(number_of_boxes, 1), low=0, high=n_rows)
+            box_rand_y_posses = np.random.randint(size=(number_of_boxes, 1), low=0, high=n_cols)
+            box_rand_posses = np.concatenate(box_rand_x_posses,
+                                             box_rand_y_posses,
+                                             axis=1)
+            box_rand_posses = set(box_rand_posses.tolist())
+            box_rand_posses = box_rand_posses.difference(succ_gen_box_rand_posses, succ_gen_lava_rand_posses, succ_gen_barrier_rand_posses)
+            
+            for i in range(min(number_of_boxes - len(succ_gen_box_rand_posses), 
+                               len(box_rand_posses))):
+                
+                _iter = iter(lava_rand_posses)
+                succ_gen_lava_rand_posses.add(next(_iter))
+
+        for barrier_pos in succ_gen_barrier_rand_posses:
+            barrier_x, barrier_y = barrier_pos[0], barrier_pos[1]
+            map[barrier_x][barrier_y] = Square(val=100, btype='Barrier')
+
+        for lava_pos in succ_gen_lava_rand_posses:
+            lava_x, lava_y = lava_pos[0], lava_pos[1]
+            map[lava_x][lava_y] = Square(val=-100, btype='Lava')
+
+        for box_pos in succ_gen_box_rand_posses:
+            box_x, box_y = box_pos[0], box_pos[1]
+            map[box_x][box_y] = Square(val=10, btype='Box')
+        
+        return map, number_of_boxes, number_of_barriers, number_of_lavas
 
     def _get_map_repr(self):
         """
