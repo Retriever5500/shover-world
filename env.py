@@ -194,12 +194,27 @@ class ShoverWorldEnv(Env):
             }
     
     def step(self, action):
+        def _update_stationary_state_for_all_boxes(make_non_stationary_dict, map, n_rows, n_cols):
+            non_stationary_poses = make_non_stationary_dict.keys()
+
+            for i in range(n_rows):
+                for j in range(n_cols): 
+                    if map[i][j].get_square_type() == 'Box':
+                        if (i, j) not in non_stationary_poses:
+                            map[i][j].make_stationary()
+                        else:
+                            d = make_non_stationary_dict[(i, j)]
+                            map[i][j].make_non_stationary_in_d(d)    
+
         assert self.action_space.contains(action), 'action should be contained in the environment\'s action space.'
         
         is_action_valid = False
         chain_length_k = 0
         initial_force_applied = False
         lava_destroyed_this_step = False
+
+        make_non_stationary_dict = dict() # a dictionary which contains positions to make non-stationary as keys and the direction to make non-stationary in as values
+
         selected_pos_x, selected_pos_y, selected_action = action[0][0], action[0][1], action[1]
         
         # when env.truncated == True, we allow further calls to env.step() (meaning that environment dynamics will work), 
@@ -207,22 +222,215 @@ class ShoverWorldEnv(Env):
         if not self.terminated:
             # move-actions
             if 1 <= selected_action <= 4:
-                target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(selected_pos_x, selected_pos_y, selected_action)
-                target_obj = self.map[target_x][target_y]
-                
-                # in-bounds move
-                if not ((target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols)):
-                    target_obj_square_type = target_obj.get_square_type()
+                selected_obj = self.map[selected_pos_x][selected_pos_y]
 
-                    # moving to a Empty square
-                    if target_obj_square_type == 'Empty':
-                        is_action_valid = True
-                        self.shover_pos = (target_x, target_y)
+                if selected_obj.get_square_type() == 'Box':
+                    target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(selected_pos_x, selected_pos_y, selected_action)
+                    target_obj = self.map[target_x][target_y]
+                    
+                    # the target square is in-bounds
+                    if not ((target_x < 0 or target_x >= self.n_rows) or (target_y < 0 or target_y >= self.n_cols)):
+                        target_obj_square_type = target_obj.get_square_type()
 
-                    # moving to a Box square (pushing a Box)
+                        # moving a single Box into a Empty square
+                        if target_obj_square_type == 'Empty':
+                            push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                            if push_cost <= self.stamina:
+                                is_action_valid = True
+                                chain_length_k = 1
+                                initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                self.curr_number_of_boxes -= 1
+                                self.destroyed_number_of_boxes += 1
+                                make_non_stationary_dict[(target_x, target_y)] = selected_action
+
+                                self.map[target_x][target_y] = Square(val=10, btype='Box')
+                                self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
+
+                                # maintenance of stamina
+                                self.stamina -= push_cost
+                            
+                        # moving a single Box into a Lava square 
+                        elif target_obj_square_type == 'Lava':
+                            push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                            if push_cost <= self.stamina:
+                                is_action_valid = True
+                                chain_length_k = 1
+                                initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                lava_destroyed_this_step = True
+                                self.curr_number_of_boxes -= 1
+                                self.destroyed_number_of_boxes += 1
+
+                                self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
+
+                                # maintenance of stamina
+                                self.stamina -= push_cost
+                            
+                        # pusing a single Box into a Barrier square 
+                        elif target_obj_square_type == 'Barrier':
+                            push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                            if push_cost <= self.stamina:
+                                is_action_valid = True
+                                chain_length_k = 1
+                                initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                make_non_stationary_dict[(selected_pos_x, selected_pos_y)] = selected_action 
+
+                                # maintenance of stamina
+                                self.stamina -= push_cost
+
+                        # pushing a chain of Boxes, aligned along the pusing direction
+                        else:
+                            # finding the target square
+                            chain_length_k = 1
+                            tail_box_x, tail_box_y = None, None
+                            while self.map[target_x][target_y].get_square_type() == 'Box':
+                                chain_length_k += 1
+                                tail_box_x, tail_box_y = target_x, target_y
+                                target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(target_x, target_y, selected_action)
+
+                            # the target square is in-bounds
+                            if (0 <= target_x < self.n_rows) and (0 <= target_y < self.n_cols):
+                                target_obj = self.map[target_x][target_y]
+
+                                # moving a chain of Boxes into a Empty sqaure
+                                if target_obj.get_square_type() == 'Empty':
+                                    push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                    if push_cost <= self.stamina:
+                                        is_action_valid = True
+                                        initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                        
+                                        if target_x < selected_pos_x:
+                                            j = selected_pos_y
+                                            for i in range(target_x, selected_pos_x):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        elif target_x > selected_pos_x:
+                                            j = selected_pos_y
+                                            for i in range(selected_pos_x + 1, target_x + 1):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        elif target_y < selected_pos_y:
+                                            i = selected_pos_x
+                                            for j in range(target_y, selected_pos_y):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+                                        else:
+                                            i = selected_pos_x
+                                            for j in range(selected_pos_y + 1, target_y + 1):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        self.map[target_x][target_y] = Square(val=10, btype='Box')
+                                        self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
+
+                                        # maintenance of stamina
+                                        self.stamina -= push_cost
+                                    
+                                # moving a chain of Boxes into a Lava sqaure
+                                elif target_obj.get_square_type() == 'Lava':
+                                    push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                    if push_cost <= self.stamina:
+                                        is_action_valid = True
+                                        lava_destroyed_this_step = True
+                                        self.curr_number_of_boxes -= 1
+                                        self.destroyed_number_of_boxes += 1
+                                        initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                        
+                                        if target_x < selected_pos_x:
+                                            j = selected_pos_y
+                                            for i in range(target_x + 1, selected_pos_x):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        elif target_x > selected_pos_x:
+                                            j = selected_pos_y
+                                            for i in range(selected_pos_x + 1, target_x):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        elif target_y < selected_pos_y:
+                                            i = selected_pos_x
+                                            for j in range(target_y + 1, selected_pos_y):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+                                        else:
+                                            i = selected_pos_x
+                                            for j in range(selected_pos_y + 1, target_y):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
+
+                                        # maintenance of stamina
+                                        self.stamina -= push_cost
+
+                                # moving a chain of Boxes into a Barrier sqaure
+                                elif target_obj.get_square_type() == 'Barrier':
+                                    push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                    if push_cost <= self.stamina:
+                                        is_action_valid = True
+                                        initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                        
+                                        if target_x < selected_pos_x:
+                                            j = selected_pos_y
+                                            for i in range(target_x + 1, selected_pos_x + 1):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        elif target_x > selected_pos_x:
+                                            j = selected_pos_y
+                                            for i in range(selected_pos_x, target_x):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        elif target_y < selected_pos_y:
+                                            i = selected_pos_x
+                                            for j in range(target_y + 1, selected_pos_y + 1):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+                                        else:
+                                            i = selected_pos_x
+                                            for j in range(selected_pos_y, target_y):
+                                                make_non_stationary_dict[(i, j)] = selected_action
+
+                                        # maintenance of stamina
+                                        self.stamina -= push_cost 
+
+                            # the target square is out-bounds
+                            else:
+                                push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                if push_cost <= self.stamina:
+                                    is_action_valid = True
+                                    initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                    
+                                    if target_x < selected_pos_x:
+                                        j = selected_pos_y
+                                        for i in range(target_x + 1, selected_pos_x):
+                                            make_non_stationary_dict[(i, j)] = selected_action
+
+                                    elif target_x > selected_pos_x:
+                                        j = selected_pos_y
+                                        for i in range(selected_pos_x, target_x):
+                                            make_non_stationary_dict[(i, j)] = selected_action
+
+                                    elif target_y < selected_pos_y:
+                                        i = selected_pos_x
+                                        for j in range(target_y + 1, selected_pos_y + 1):
+                                            make_non_stationary_dict[(i, j)] = selected_action
+                                    else:
+                                        i = selected_pos_x
+                                        for j in range(selected_pos_y, target_y):
+                                            make_non_stationary_dict[(i, j)] = selected_action
+
+                                    self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
+
+                                    # maintenance of stamina
+                                    self.stamina -= push_cost
+
+                    # the target sqaure is out-bounds
                     else:
-                        # TODO: the logic for pusing a Box.
-                        is_action_valid = True
+                        push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                        if push_cost <= self.stamina:
+                            is_action_valid = True
+                            chain_length_k = 1
+                            initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                            self.curr_number_of_boxes -= 1
+                            self.destroyed_number_of_boxes += 1
+
+                            self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
+
+                            # maintenance of stamina
+                            self.stamina -= push_cost
             
             # Hellify or Barrier Marker actions
             else:
@@ -310,6 +518,9 @@ class ShoverWorldEnv(Env):
                         self.curr_number_of_lavas += (n - 2) * (n - 2)
 
             self.time_step += 1
+
+            # update stationary or non-stationary state for all boxes
+            _update_stationary_state_for_all_boxes(make_non_stationary_dict, self.map, self.n_rows, self.n_cols)
 
             perfect_squares_available_list = self._find_perfect_squares()
 
