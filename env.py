@@ -140,6 +140,7 @@ class ShoverWorldEnv(Env):
         self.curr_number_of_barriers = None
         self.curr_number_of_lavas = None
         self.destroyed_number_of_boxes = None
+        self.perfect_squares_available_dict = None # key=(top_left_x, top_left_y, n), value=perfect_square_age
 
         self.action_space = spaces.Tuple(spaces=[spaces.Box(shape=(2,), low=0, high=max(self.n_rows, self.n_cols) - 1, dtype=int), spaces.Discrete(start=1, n=6, dtype=int)])
         self.observation_space = spaces.Dict(spaces={'map':spaces.Box(shape=(self.n_rows, self.n_cols,), low=-100, high=100, dtype=int), 
@@ -163,9 +164,11 @@ class ShoverWorldEnv(Env):
         self.time_step = 0
         self.stamina = self.initial_stamina
         self.destroyed_number_of_boxes = 0
+        self.perfect_squares_available_dict = dict()
         
-        # TODO indentify perfect squares available
-        perfect_squares_available = self._find_perfect_squares()
+        perfect_squares_available_list = self._find_perfect_squares()
+        for perfect_square in perfect_squares_available_list:
+            self.perfect_squares_available_dict[perfect_square] = 0
 
         return {# observation
                 'map':self._get_map_repr(), 
@@ -181,7 +184,7 @@ class ShoverWorldEnv(Env):
                 'chain_length_k':0, 
                 'initial_force_applied':False, 
                 'lava_destroyed_this_step':False, 
-                'perfect_squares_available':perfect_squares_available
+                'perfect_squares_available':self.perfect_squares_available_dict
             }
     
     def step(self, action):
@@ -191,7 +194,6 @@ class ShoverWorldEnv(Env):
         chain_length_k = 0
         initial_force_applied = False
         lava_destroyed_this_step = False
-        perfect_squares_available = None
         selected_pos_x, selected_pos_y, selected_action = action[0][0], action[0][1], action[1]
         
         # move-actions
@@ -234,8 +236,23 @@ class ShoverWorldEnv(Env):
                 pass
 
         self.time_step += 1
-        perfect_squares_available = self._find_perfect_squares()
 
+        perfect_squares_available_list = self._find_perfect_squares()
+
+        # remove those previous perfect squares which are not available now
+        for perfect_square in self.perfect_squares_available_dict.keys():
+            if perfect_square not in perfect_squares_available_list:
+                self.perfect_squares_available_dict.pop(perfect_square)
+
+        # increament the age of previous perfect squares which are available now 
+        for perfect_square in self.perfect_squares_available_dict.keys():
+            self.perfect_squares_available_dict[perfect_square] += 1
+
+        # add new created perfect squares
+        for perfect_square in perfect_squares_available_list:
+            if perfect_square not in self.perfect_squares_available_dict.keys():
+                self.perfect_squares_available_dict[perfect_square] = 1
+        
         return {# observation
                 'map':self._get_map_repr(), 
                 'stamina':self.stamina,
@@ -250,7 +267,7 @@ class ShoverWorldEnv(Env):
                 'chain_length_k':chain_length_k, 
                 'initial_force_applied':initial_force_applied, 
                 'lava_destroyed_this_step':lava_destroyed_this_step, 
-                'perfect_squares_available':perfect_squares_available
+                'perfect_squares_available':self.perfect_squares_available_dict
             }
 
     def _get_target_pos_after_move_action(start_x, start_y, action):
@@ -357,6 +374,63 @@ class ShoverWorldEnv(Env):
             perfect_squares_available (list[tuple[int, int, int]]):
                 A list of available perfect squares, identified by their n and their top-left x, y coordinate. E.g. [[1, 1, 1], [1, 4, 5], ...].
         """
-        # TODO: find the perfect squares.
-        perfect_squares_available = None
+        def _is_perfect_square(map, top_left_x, top_left_y, n):
+            is_perfect_square = True
+
+            # check if the n*n block, starting at top-left corner contains only of boxes
+            for i in range(top_left_x, top_left_x + n):
+                for j in range(top_left_y, top_left_y + n):
+                    if map[i][j].get_square_type() != 'Box':
+                        is_perfect_square = False
+                        return is_perfect_square
+                    
+            # check the outer neighbours
+            n_rows, n_cols = len(map), len(map[0])
+
+            # top bar (including outer top-left corner)
+            i = top_left_x - 1
+            for j in range(top_left_y - 1, top_left_y + n):
+                if 0 <= i <= (n_rows - 1) and 0 <= j <= (n_cols - 1):
+                    if map[i][j].get_square_type() == 'Box':
+                       is_perfect_square = False
+                       return is_perfect_square 
+
+            # left bar (including outer bottom-left corner)
+            j = top_left_y - 1
+            for i in range(top_left_x, top_left_x + n + 1):
+                if 0 <= i <= (n_rows - 1) and 0 <= j <= (n_cols - 1):
+                    if map[i][j].get_square_type() == 'Box':
+                       is_perfect_square = False
+                       return is_perfect_square 
+
+            # bottom bar (including outer bottom-right corner)
+            i = top_left_x + n
+            for j in range(top_left_y, top_left_y + n + 1):
+                if 0 <= i <= (n_rows - 1) and 0 <= j <= (n_cols - 1):
+                    if map[i][j].get_square_type() == 'Box':
+                       is_perfect_square = False
+                       return is_perfect_square
+                    
+            # right bar (including outer top-right corner)
+            j = top_left_y + n
+            for i in range(top_left_x + n - 1, top_left_x - 1):
+                if 0 <= i <= (n_rows - 1) and 0 <= j <= (n_cols - 1):
+                    if map[i][j].get_square_type() == 'Box':
+                       is_perfect_square = False
+                       return is_perfect_square
+
+            return is_perfect_square
+
+
+        perfect_squares_available = list()
+        for i in range(self.n_rows):
+            for j in range(self.n_cols):
+                last_perfect_square = None
+                for n in range(1, min(self.n_rows - i, self.n_cols - j)):
+                    if _is_perfect_square(self.map, i, j, n):
+                        last_perfect_square = (i, j, n)
+                
+                if last_perfect_square != None:
+                    perfect_squares_available.append(last_perfect_square)     
+                
         return perfect_squares_available
