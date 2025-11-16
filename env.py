@@ -101,6 +101,8 @@ class ShoverWorldEnv(Env):
                 number_of_boxes=None, 
                 number_of_barriers=None, 
                 number_of_lavas=None, 
+                r_lava=None,
+                r_barrier_marker=None,
                 initial_stamina=1000, 
                 max_timestep=400, 
                 map_path=None, 
@@ -120,6 +122,8 @@ class ShoverWorldEnv(Env):
         self.number_of_lavas = number_of_lavas
         self.initial_force = initial_force
         self.unit_force = unit_force
+        self.r_lava = r_lava if r_lava != None else initial_force
+        self.r_barrier_marker = (lambda n: (r_barrier_marker if r_barrier_marker != None else 10 * n * n))
         self.perf_sq_initial_age = perf_sq_initial_age
         self.initial_stamina = initial_stamina
         self.max_timestep = max_timestep
@@ -216,6 +220,7 @@ class ShoverWorldEnv(Env):
         chain_length_k = 0
         initial_force_applied = False
         lava_destroyed_this_step = False
+        reward = 0
 
         make_non_stationary_dict = dict() # a dictionary which contains positions to make non-stationary as keys and the direction to make non-stationary in as values
 
@@ -268,6 +273,8 @@ class ShoverWorldEnv(Env):
 
                                 # maintenance of stamina
                                 self.stamina -= push_cost
+
+                                reward += self.r_lava
                             
                         # pusing a single Box into a Barrier square 
                         elif target_obj_square_type == 'Barrier':
@@ -360,6 +367,8 @@ class ShoverWorldEnv(Env):
 
                                         # maintenance of stamina
                                         self.stamina -= push_cost
+
+                                        reward += self.r_lava
 
                                 # moving a chain of Boxes into a Barrier sqaure
                                 elif target_obj.get_square_type() == 'Barrier':
@@ -475,6 +484,8 @@ class ShoverWorldEnv(Env):
                         self.curr_number_of_boxes -= n * n
                         self.curr_number_of_barriers += n * n
                         self.destroyed_number_of_boxes += n * n
+
+                        reward += self.r_barrier_marker(n)
                 
                 # Hellify
                 else:
@@ -556,6 +567,7 @@ class ShoverWorldEnv(Env):
                 'prev_selected_pos':(selected_pos_x, selected_pos_y),
                 'prev_selected_action':(selected_action)
             }, \
+            reward, \
             self.terminated, \
             self.truncated, \
             {# info
