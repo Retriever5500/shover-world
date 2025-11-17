@@ -192,6 +192,17 @@ class ShoverWorldEnv(Env):
     
     def step(self, action):
         def _update_stationary_state_for_all_boxes(make_non_stationary_dict, map, n_rows, n_cols):
+            """
+            Updates stationary or non-stationary state, for all Boxes on the map.
+
+            Make the Boxes, which have been pushed (and moved) in some direction in the last step, non-stationary in that direction. 
+            And those make other boxes stationary.
+
+            Args:
+                make_non_stationary_dict (dict[tuple(int, int), int]):
+                    Dictionary mapping position of the Boxes which should be made non-stationary to the direction which they should be made
+                    non-stationary upon. 
+            """
             non_stationary_poses = make_non_stationary_dict.keys()
 
             for i in range(n_rows):
