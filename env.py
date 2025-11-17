@@ -203,15 +203,31 @@ class ShoverWorldEnv(Env):
                             d = make_non_stationary_dict[(i, j)]
                             map[i][j].make_non_stationary_in_d(d)
 
-        def _automatic_disolution(perfect_squares_available_dict, map, perf_sq_initial_age):
+        def _automatic_dissolution(perfect_squares_available_dict, map, perf_sq_initial_age):
+            """ 
+            Applies automatic dissolution to the perfect squares which are as aged as perf_sq_initial_age.
+
+            Args:
+                perfect_squares_available_dict (dict[tuple(int, int, int), int]):
+                    The dictionary mapping (top_left_x, top_left_y, n) to age of the perfect square.
+                perf_sq_initial_age (int):
+                    The thresholding number, which causes the perfect squares with age >= threshold to dissolve (disappear).
+
+            Returns:
+                destroyed_num_of_boxes (int):
+                    Total number of boxes, destroyed during automatic dissolution.
+            """
+            destroyed_num_of_boxes = 0
             for perf_sqr, age in perfect_squares_available_dict.items():
                 
                 if age >= perf_sq_initial_age:
                     perf_sqr_top_left_x, perf_sqr_top_left_y, n = perf_sqr
-                    
+                    destroyed_num_of_boxes += n * n
+
                     for i in range(perf_sqr_top_left_x, perf_sqr_top_left_x + n):
                         for j in range(perf_sqr_top_left_y, perf_sqr_top_left_y + n):
                             map[i][j] = Square(val=0, btype='Empty')
+            return destroyed_num_of_boxes
 
         assert self.action_space.contains(action), 'action should be contained in the environment\'s action space.'
         
@@ -552,7 +568,10 @@ class ShoverWorldEnv(Env):
                 if perfect_square not in self.perfect_squares_available_dict.keys():
                     self.perfect_squares_available_dict[perfect_square] = 0
 
-            _automatic_disolution(self.perfect_squares_available_dict, self.map, self.perf_sq_initial_age)
+            # apply automatic dissolution for aged perfect squares
+            destroyed_num_of_boxes_in_automatic_dissolution = _automatic_dissolution(self.perfect_squares_available_dict, self.map, self.perf_sq_initial_age)
+            self.curr_number_of_boxes -= destroyed_num_of_boxes_in_automatic_dissolution
+            self.destroyed_number_of_boxes += destroyed_num_of_boxes_in_automatic_dissolution
 
         # check for termination or truncation conditions
         if self.curr_number_of_boxes == 0 or self.stamina == 0:
