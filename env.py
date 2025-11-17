@@ -18,7 +18,7 @@ class Square:
             self.non_stationary_d = 5
 
     def __str__(self):
-        return self.val
+        return str(self.val)
     
     def get_square_type(self):
         """
