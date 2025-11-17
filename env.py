@@ -264,8 +264,6 @@ class ShoverWorldEnv(Env):
                                 is_action_valid = True
                                 chain_length_k = 1
                                 initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
-                                self.curr_number_of_boxes -= 1
-                                self.destroyed_number_of_boxes += 1
                                 make_non_stationary_dict[(target_x, target_y)] = selected_action
 
                                 self.map[target_x][target_y] = Square(val=10, btype='Box')
@@ -296,7 +294,7 @@ class ShoverWorldEnv(Env):
                         elif target_obj_square_type == 'Barrier':
                             push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
                             if push_cost <= self.stamina:
-                                is_action_valid = True
+                                is_action_valid = False
                                 chain_length_k = 1
                                 initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                 make_non_stationary_dict[(selected_pos_x, selected_pos_y)] = selected_action 
@@ -308,10 +306,8 @@ class ShoverWorldEnv(Env):
                         else:
                             # finding the target square
                             chain_length_k = 1
-                            tail_box_x, tail_box_y = None, None
                             while self.map[target_x][target_y].get_square_type() == 'Box':
                                 chain_length_k += 1
-                                tail_box_x, tail_box_y = target_x, target_y
                                 target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(target_x, target_y, selected_action)
 
                             # the target square is in-bounds
@@ -325,20 +321,25 @@ class ShoverWorldEnv(Env):
                                         is_action_valid = True
                                         initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
+                                        # if the target square lies above the chain
                                         if target_x < selected_pos_x:
                                             j = selected_pos_y
                                             for i in range(target_x, selected_pos_x):
                                                 make_non_stationary_dict[(i, j)] = selected_action
 
+                                        # if the target square lies below the chain
                                         elif target_x > selected_pos_x:
                                             j = selected_pos_y
                                             for i in range(selected_pos_x + 1, target_x + 1):
                                                 make_non_stationary_dict[(i, j)] = selected_action
 
+                                        # if the target square lies to the left of the chain
                                         elif target_y < selected_pos_y:
                                             i = selected_pos_x
                                             for j in range(target_y, selected_pos_y):
                                                 make_non_stationary_dict[(i, j)] = selected_action
+                                        
+                                        # if the target square lies to the right of the chain
                                         else:
                                             i = selected_pos_x
                                             for j in range(selected_pos_y + 1, target_y + 1):
@@ -360,20 +361,25 @@ class ShoverWorldEnv(Env):
                                         self.destroyed_number_of_boxes += 1
                                         initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
+                                        # if the target square lies above the chain
                                         if target_x < selected_pos_x:
                                             j = selected_pos_y
                                             for i in range(target_x + 1, selected_pos_x):
                                                 make_non_stationary_dict[(i, j)] = selected_action
 
+                                        # if the target square lies below the chain
                                         elif target_x > selected_pos_x:
                                             j = selected_pos_y
                                             for i in range(selected_pos_x + 1, target_x):
                                                 make_non_stationary_dict[(i, j)] = selected_action
 
+                                        # if the target square lies to the left of the chain
                                         elif target_y < selected_pos_y:
                                             i = selected_pos_x
                                             for j in range(target_y + 1, selected_pos_y):
                                                 make_non_stationary_dict[(i, j)] = selected_action
+                                        
+                                        # if the target square lies to the right of the chain
                                         else:
                                             i = selected_pos_x
                                             for j in range(selected_pos_y + 1, target_y):
@@ -393,20 +399,25 @@ class ShoverWorldEnv(Env):
                                         is_action_valid = True
                                         initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
+                                        # if the target square lies above the chain
                                         if target_x < selected_pos_x:
                                             j = selected_pos_y
                                             for i in range(target_x + 1, selected_pos_x + 1):
                                                 make_non_stationary_dict[(i, j)] = selected_action
 
+                                        # if the target square lies below the chain
                                         elif target_x > selected_pos_x:
                                             j = selected_pos_y
                                             for i in range(selected_pos_x, target_x):
                                                 make_non_stationary_dict[(i, j)] = selected_action
 
+                                        # if the target square lies to the left of the chain
                                         elif target_y < selected_pos_y:
                                             i = selected_pos_x
                                             for j in range(target_y + 1, selected_pos_y + 1):
                                                 make_non_stationary_dict[(i, j)] = selected_action
+                                        
+                                        # if the target square lies to the right of the chain
                                         else:
                                             i = selected_pos_x
                                             for j in range(selected_pos_y, target_y):
@@ -422,20 +433,25 @@ class ShoverWorldEnv(Env):
                                     is_action_valid = True
                                     initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                     
+                                    # if the target square lies above the chain
                                     if target_x < selected_pos_x:
                                         j = selected_pos_y
                                         for i in range(target_x + 1, selected_pos_x):
                                             make_non_stationary_dict[(i, j)] = selected_action
 
+                                    # if the target square lies below the chain
                                     elif target_x > selected_pos_x:
                                         j = selected_pos_y
                                         for i in range(selected_pos_x, target_x):
                                             make_non_stationary_dict[(i, j)] = selected_action
 
+                                    # if the target square lies to the left of the chain
                                     elif target_y < selected_pos_y:
                                         i = selected_pos_x
                                         for j in range(target_y + 1, selected_pos_y + 1):
                                             make_non_stationary_dict[(i, j)] = selected_action
+                                    
+                                    # if the target square lies to the right of the chain
                                     else:
                                         i = selected_pos_x
                                         for j in range(selected_pos_y, target_y):
