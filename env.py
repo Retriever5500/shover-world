@@ -573,11 +573,11 @@ class ShoverWorldEnv(Env):
             self.curr_number_of_boxes -= destroyed_num_of_boxes_in_automatic_dissolution
             self.destroyed_number_of_boxes += destroyed_num_of_boxes_in_automatic_dissolution
 
-        # check for termination or truncation conditions
-        if self.curr_number_of_boxes == 0 or self.stamina == 0:
-            self.terminated = True
-        if self.time_step == self.max_timestep:
-            self.truncated = True
+            # check for termination or truncation conditions
+            if self.curr_number_of_boxes == 0 or self.stamina == 0:
+                self.terminated = True
+            if self.time_step == self.max_timestep:
+                self.truncated = True
         
         return {# observation
                 'map':self._get_map_repr(), 
