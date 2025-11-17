@@ -505,7 +505,7 @@ class ShoverWorldEnv(Env):
                         top_left_x, top_left_y, n = oldest_perf_sqr
                         for i in range(top_left_x, top_left_x + n):
                             for j in range(top_left_y, top_left_y + n):
-                                self.map = Square(val=100, btype='Barrier')
+                                self.map[i][j] = Square(val=100, btype='Barrier')
                             
                         # increament stamina
                         self.stamina += n * n
