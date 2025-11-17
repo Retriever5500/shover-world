@@ -563,11 +563,14 @@ class ShoverWorldEnv(Env):
                         self.destroyed_number_of_boxes += n * n
                         self.curr_number_of_lavas += (n - 2) * (n - 2)
 
+            # maintenance of time_step
             self.time_step += 1
 
             # update stationary or non-stationary state for all boxes
             _update_stationary_state_for_all_boxes(make_non_stationary_dict, self.map, self.n_rows, self.n_cols)
 
+
+            # maintenance of perfect_squares_available_dict
             perfect_squares_available_list = self._find_perfect_squares()
 
             # remove those previous perfect squares which are not available now
