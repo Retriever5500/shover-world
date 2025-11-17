@@ -248,12 +248,13 @@ class ShoverWorldEnv(Env):
             if 1 <= selected_action <= 4:
                 selected_obj = self.map[selected_pos_x][selected_pos_y]
 
+                # we can proceed to a move-action only if the selected object is a Box square
                 if selected_obj.get_square_type() == 'Box':
                     target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(selected_pos_x, selected_pos_y, selected_action)
-                    target_obj = self.map[target_x][target_y]
                     
                     # the target square is in-bounds
                     if (0 <= target_x < self.n_rows) and (0 <= target_y < self.n_cols):
+                        target_obj = self.map[target_x][target_y]
                         target_obj_square_type = target_obj.get_square_type()
 
                         # moving a single Box into a Empty square
