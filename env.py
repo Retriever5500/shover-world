@@ -406,7 +406,7 @@ class ShoverWorldEnv(Env):
                                 elif target_obj.get_square_type() == 'Barrier':
                                     push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
                                     if push_cost <= self.stamina:
-                                        is_action_valid = True
+                                        is_action_valid = False
                                         initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
 
                                         # maintenance of stamina
