@@ -109,10 +109,10 @@ class ShoverWorldEnv(Env):
                 render_mode='human'):
         
         self.metadata = {'render_modes':['human', None], 'render_fps':30}
-        assert not (map_path != None and any(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas)), \
+        assert not (map_path != None and any([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
             'if map_path is specified, none of the parameters, related to random map generation should be specified.'
         
-        assert (map_path != None or all(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas)), \
+        assert (map_path != None or all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
             'exactly one of map_path or random map generation parameters, should be specified.'
         
         self.n_rows = n_rows
@@ -142,11 +142,11 @@ class ShoverWorldEnv(Env):
         self.destroyed_number_of_boxes = None
         self.perfect_squares_available_dict = None # key=(top_left_x, top_left_y, n), value=perfect_square_age
 
-        self.action_space = spaces.Tuple(spaces=[spaces.Box(shape=(2,), low=0, high=max(self.n_rows, self.n_cols) - 1, dtype=int), spaces.Discrete(start=1, n=6, dtype=int)])
-        self.observation_space = spaces.Dict(spaces={'map':spaces.Box(shape=(self.n_rows, self.n_cols,), low=-100, high=100, dtype=int), 
-                                                     'stamina':spaces.Box(shape=(1,), low=0, high=(2**63)-2, dtype=float),
-                                                     'prev_selected_pos':spaces.Box(shape=(2,), low=spaces.Box(shape=(2,), low=0, high=max(self.n_rows, self.n_cols) - 1, dtype=int)),
-                                                     'prev_selected_action':spaces.Discrete(start=1, n=6, dtype=int)})
+        self.action_space = spaces.Tuple(spaces=[spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int), spaces.Discrete(n=6, start=1, dtype=int)])
+        self.observation_space = spaces.Dict(spaces={'map':spaces.Box(low=-100, high=100, shape=(self.n_rows, self.n_cols,), dtype=int), 
+                                                     'stamina':spaces.Box(low=0, high=(2**63)-2, shape=(1,), dtype=float),
+                                                     'prev_selected_pos':spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int),
+                                                     'prev_selected_action':spaces.Discrete(n=6, start=1, dtype=int)})
         
     def reset(self, *, seed = None, options = None):
         super().reset(seed=seed, options=options)
@@ -516,10 +516,10 @@ class ShoverWorldEnv(Env):
                             for j in range(top_left_y, top_left_y + n):
                                 
                                 # if element lies on outer ring, convert it to Empty square
-                                if any(i == top_left_x, \
+                                if any([i == top_left_x, \
                                     i == (top_left_x + n - 1), \
                                     j == top_left_y, \
-                                    j == (top_left_y + n - 1)):
+                                    j == (top_left_y + n - 1)]):
                                     
                                     self.map[i][j] = Square(val=0, btype='Empty')
                                     
