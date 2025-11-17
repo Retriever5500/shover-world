@@ -243,11 +243,11 @@ class ShoverWorldEnv(Env):
 
                         # moving a single Box into a Empty square
                         if target_obj_square_type == 'Empty':
-                            push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                            push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
                             if push_cost <= self.stamina:
                                 is_action_valid = True
                                 chain_length_k = 1
-                                initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                 self.curr_number_of_boxes -= 1
                                 self.destroyed_number_of_boxes += 1
                                 make_non_stationary_dict[(target_x, target_y)] = selected_action
@@ -260,11 +260,11 @@ class ShoverWorldEnv(Env):
                             
                         # moving a single Box into a Lava square 
                         elif target_obj_square_type == 'Lava':
-                            push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                            push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
                             if push_cost <= self.stamina:
                                 is_action_valid = True
                                 chain_length_k = 1
-                                initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                 lava_destroyed_this_step = True
                                 self.curr_number_of_boxes -= 1
                                 self.destroyed_number_of_boxes += 1
@@ -278,11 +278,11 @@ class ShoverWorldEnv(Env):
                             
                         # pusing a single Box into a Barrier square 
                         elif target_obj_square_type == 'Barrier':
-                            push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                            push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
                             if push_cost <= self.stamina:
                                 is_action_valid = True
                                 chain_length_k = 1
-                                initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                 make_non_stationary_dict[(selected_pos_x, selected_pos_y)] = selected_action 
 
                                 # maintenance of stamina
@@ -304,10 +304,10 @@ class ShoverWorldEnv(Env):
 
                                 # moving a chain of Boxes into a Empty sqaure
                                 if target_obj.get_square_type() == 'Empty':
-                                    push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                    push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
                                     if push_cost <= self.stamina:
                                         is_action_valid = True
-                                        initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                        initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
                                         if target_x < selected_pos_x:
                                             j = selected_pos_y
@@ -336,13 +336,13 @@ class ShoverWorldEnv(Env):
                                     
                                 # moving a chain of Boxes into a Lava sqaure
                                 elif target_obj.get_square_type() == 'Lava':
-                                    push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                    push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
                                     if push_cost <= self.stamina:
                                         is_action_valid = True
                                         lava_destroyed_this_step = True
                                         self.curr_number_of_boxes -= 1
                                         self.destroyed_number_of_boxes += 1
-                                        initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                        initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
                                         if target_x < selected_pos_x:
                                             j = selected_pos_y
@@ -372,10 +372,10 @@ class ShoverWorldEnv(Env):
 
                                 # moving a chain of Boxes into a Barrier sqaure
                                 elif target_obj.get_square_type() == 'Barrier':
-                                    push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                    push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
                                     if push_cost <= self.stamina:
                                         is_action_valid = True
-                                        initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                        initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
                                         if target_x < selected_pos_x:
                                             j = selected_pos_y
@@ -401,10 +401,10 @@ class ShoverWorldEnv(Env):
 
                             # the target square is out-bounds
                             else:
-                                push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
+                                push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * chain_length_k
                                 if push_cost <= self.stamina:
                                     is_action_valid = True
-                                    initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                                    initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                     
                                     if target_x < selected_pos_x:
                                         j = selected_pos_y
@@ -432,11 +432,11 @@ class ShoverWorldEnv(Env):
 
                     # the target sqaure is out-bounds
                     else:
-                        push_cost = (self.initial_force * int(selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
+                        push_cost = (self.initial_force * int(not selected_obj.is_non_stationary_in_d(selected_action))) + self.unit_force * 1
                         if push_cost <= self.stamina:
                             is_action_valid = True
                             chain_length_k = 1
-                            initial_force_applied = selected_obj.is_non_stationary_in_d(selected_action)
+                            initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                             self.curr_number_of_boxes -= 1
                             self.destroyed_number_of_boxes += 1
 
