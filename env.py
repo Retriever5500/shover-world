@@ -115,6 +115,14 @@ class ShoverWorldEnv(Env):
         assert (map_path != None or all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
             'exactly one of map_path or random map generation parameters, should be specified.'
         
+        # if map_path is given, try to load and populate attributes related to map with that.
+        map, \
+            n_rows, \
+            n_cols, \
+            number_of_boxes, \
+            number_of_barriers, \
+            number_of_lavas = ShoverWorldEnv._load_map(map_path) if (map_path != None) else (None, None, None, None, None, None)
+        
         self.n_rows = n_rows
         self.n_cols = n_cols
         self.number_of_boxes = number_of_boxes
@@ -155,15 +163,21 @@ class ShoverWorldEnv(Env):
         self.truncated = False
 
         if self.map_path:
-            self.map, self.curr_number_of_boxes, \
-                self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._load_map(self.map_path)
+            self.map, \
+                self.n_rows, \
+                self.n_cols, \
+                self.curr_number_of_boxes, \
+                self.curr_number_of_barriers, \
+                self.curr_number_of_lavas = ShoverWorldEnv._load_map(self.map_path)
         else:
-            self.map, self.curr_number_of_boxes, \
-                self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._random_map_generation(self.n_rows, 
-                                                                                                                self.n_cols,
-                                                                                                                self.number_of_boxes, 
-                                                                                                                self.number_of_barriers, 
-                                                                                                                self.number_of_lavas)
+            self.map, \
+                self.curr_number_of_boxes, \
+                self.curr_number_of_barriers, \
+                self.curr_number_of_lavas = ShoverWorldEnv._random_map_generation(self.n_rows, 
+                                                                                    self.n_cols,
+                                                                                    self.number_of_boxes, 
+                                                                                    self.number_of_barriers, 
+                                                                                    self.number_of_lavas)
         self.time_step = 0
         self.stamina = self.initial_stamina
         self.destroyed_number_of_boxes = 0
@@ -643,6 +657,10 @@ class ShoverWorldEnv(Env):
         Returns:
             map (list[list]): 
                 Map containing integers (representing barriers, lavas, or empty square) or instances of `ShoverBox` class.
+            n_rows (int):
+                number of rows in the map.
+            n_cols (int):
+                number of columns in the map.
             curr_number_of_boxes (int): 
                 curr number of boxes in the map.
             curr_number_of_barriers (int): 
@@ -652,10 +670,12 @@ class ShoverWorldEnv(Env):
         """
         # TODO: load the map and shover pos
         map = None
+        n_rows = None
+        n_cols = None
         curr_number_of_boxes = None
         curr_number_of_barriers = None
         curr_number_of_lavas = None
-        return map, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
+        return map, n_rows, n_cols, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
 
     def _random_map_generation(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas):
         """
