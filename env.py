@@ -483,25 +483,23 @@ class ShoverWorldEnv(Env):
                 if selected_action == 5:
                     # checking whether if these is at least a perfect square such that n >= 2
                     perf_sqr_for_mark_exists = False
-                    for perf_sqr in self.perfect_squares_available_dict.keys():
+
+                    # find the oldest perfect square such that n >= 2
+                    oldest_perf_sqr, oldest_age = None, None
+
+                    for perf_sqr, age in self.perfect_squares_available_dict.items():
                         if perf_sqr[2] >= 2:
                             perf_sqr_for_mark_exists = True
                             is_action_valid = True
-                            break
+
+                            if oldest_perf_sqr == None:
+                                    oldest_perf_sqr, oldest_age = perf_sqr, age
+                            
+                            elif oldest_age < age:
+                                oldest_perf_sqr, oldest_age = perf_sqr, age
                     
                     # if we have at least a perfect square such that n >= 2:
                     if perf_sqr_for_mark_exists:
-
-                        # find the oldest perfect square such that n >= 2
-                        oldest_perf_sqr, oldest_age = None, None
-                        for perf_sqr, age in self.perfect_squares_available_dict.items():
-                            
-                            if perf_sqr[2] >= 2: # n >= 2
-                                if oldest_perf_sqr == None:
-                                    oldest_perf_sqr, oldest_age = perf_sqr, age
-                            
-                                elif oldest_age < age:
-                                    oldest_perf_sqr, oldest_age = perf_sqr, age
 
                         # convert all of the Boxes inside the perfect square into Barriers
                         top_left_x, top_left_y, n = oldest_perf_sqr
@@ -523,17 +521,15 @@ class ShoverWorldEnv(Env):
                 else:
                     # checking whether if these is at least a perfect square such that n > 2
                     perf_sqr_for_hellify_exists = False
-                    for perf_sqr in self.perfect_squares_available_dict.keys():
+
+                    # find the oldest perfect square such that n > 2
+                    oldest_perf_sqr, oldest_age = None, None
+                    
+
+                    for perf_sqr, age in self.perfect_squares_available_dict.items():
                         if perf_sqr[2] > 2:
                             perf_sqr_for_hellify_exists = True
                             is_action_valid = True
-                            break
-                    
-                    # if we have at least a perfect square such that n > 2:
-                    if perf_sqr_for_hellify_exists:
-                        # find the oldest perfect square such that n > 2
-                        oldest_perf_sqr, oldest_age = None, None
-                        for perf_sqr, age in self.perfect_squares_available_dict.items():
                             
                             if perf_sqr[2] > 2: # n > 2
                                 if oldest_perf_sqr == None:
@@ -541,6 +537,9 @@ class ShoverWorldEnv(Env):
                             
                                 elif oldest_age < age:
                                     oldest_perf_sqr, oldest_age = perf_sqr, age
+                    
+                    # if we have at least a perfect square such that n > 2:
+                    if perf_sqr_for_hellify_exists:
 
                         # convert all Boxes on the outer ring to Empty squares, and others to Lava squares
                         top_left_x, top_left_y, n = oldest_perf_sqr
