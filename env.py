@@ -159,8 +159,7 @@ class ShoverWorldEnv(Env):
                 self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._load_map(self.map_path)
         else:
             self.map, self.curr_number_of_boxes, \
-                self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._random_map_generation(self.np_random, 
-                                                                                                                self.n_rows, 
+                self.curr_number_of_barriers, self.curr_number_of_lavas = ShoverWorldEnv._random_map_generation(self.n_rows, 
                                                                                                                 self.n_cols,
                                                                                                                 self.number_of_boxes, 
                                                                                                                 self.number_of_barriers, 
@@ -664,9 +663,8 @@ class ShoverWorldEnv(Env):
 
         all_x_idxs = np.arange(stop=n_rows)
         all_y_idxs = np.arange(stop=n_cols)
-        all_idxs = np.concatenate(all_x_idxs,
-                                    all_y_idxs,
-                                    axis=1)
+        X, Y = np.meshgrid(all_x_idxs, all_y_idxs, indexing='ij')
+        all_idxs = np.stack([X.ravel(), Y.ravel()], axis=1)
         np.random.shuffle(all_idxs)
 
         barrier_rand_posses = all_idxs[:number_of_barriers]
