@@ -116,12 +116,12 @@ class ShoverWorldEnv(Env):
             'exactly one of map_path or random map generation parameters, should be specified.'
         
         # if map_path is given, try to load and populate attributes related to map with that.
-        map, \
+        _, \
             n_rows, \
             n_cols, \
             number_of_boxes, \
             number_of_barriers, \
-            number_of_lavas = ShoverWorldEnv._load_map(map_path) if (map_path != None) else (None, None, None, None, None, None)
+            number_of_lavas = ShoverWorldEnv._load_map(map_path) if (map_path != None) else (None, n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas)
         
         self.n_rows = n_rows
         self.n_cols = n_cols
