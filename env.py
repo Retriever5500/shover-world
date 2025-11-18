@@ -113,8 +113,6 @@ class ShoverWorldEnv(Env):
                 render_mode='human'):
         
         self.metadata = {'render_modes':['human', None], 'render_fps':30}
-        assert (map_path == None and all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
-            'specify map_path or map parameters for random map generation.'
         
         assert (map_path != None or all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
             'exactly one of map_path or random map generation parameters, should be specified.'
