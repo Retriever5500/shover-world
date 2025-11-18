@@ -859,7 +859,7 @@ class ShoverWorldEnv(Env):
         for i in range(self.n_rows):
             for j in range(self.n_cols):
                 last_perfect_square = None
-                for n in range(1, min(self.n_rows - i, self.n_cols - j) + 1):
+                for n in range(2, min(self.n_rows - i, self.n_cols - j) + 1):
                     if _is_perfect_square(self.map, i, j, n):
                         last_perfect_square = (i, j, n)
                 
