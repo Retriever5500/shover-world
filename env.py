@@ -344,7 +344,7 @@ class ShoverWorldEnv(Env):
                         else:
                             # finding the target square
                             chain_length_k = 1
-                            while self.map[target_x][target_y].get_square_type() == 'Box':
+                            while (0 <= target_x < self.n_rows and 0 <= target_y < self.n_cols) and self.map[target_x][target_y].get_square_type() == 'Box':
                                 chain_length_k += 1
                                 target_x, target_y = ShoverWorldEnv._get_target_pos_after_move_action(target_x, target_y, selected_action)
 
