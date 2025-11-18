@@ -96,9 +96,10 @@ class ShoverWorldEnv(Env):
             we will work with verbose descriptions rather than action values.
 
     """
-    def __init__(self, initial_force, 
-                unit_force, 
-                perf_sq_initial_age, 
+    def __init__(self, 
+                initial_force=40, 
+                unit_force=10, 
+                perf_sq_initial_age=5, 
                 n_rows=None, 
                 n_cols=None, 
                 number_of_boxes=None, 
