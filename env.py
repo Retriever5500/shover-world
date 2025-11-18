@@ -1,3 +1,4 @@
+import os
 from gymnasium import *
 import numpy as np
 import copy
@@ -111,8 +112,8 @@ class ShoverWorldEnv(Env):
                 render_mode='human'):
         
         self.metadata = {'render_modes':['human', None], 'render_fps':30}
-        assert not (map_path != None and any([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
-            'if map_path is specified, none of the parameters, related to random map generation should be specified.'
+        assert (map_path == None and all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
+            'specify map_path or map parameters for random map generation.'
         
         assert (map_path != None or all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
             'exactly one of map_path or random map generation parameters, should be specified.'
@@ -587,7 +588,7 @@ class ShoverWorldEnv(Env):
             perfect_squares_available_list = self._find_perfect_squares()
 
             # remove those previous perfect squares which are not available now
-            for perfect_square in self.perfect_squares_available_dict.keys():
+            for perfect_square in set(self.perfect_squares_available_dict.keys()):
                 if perfect_square not in perfect_squares_available_list:
                     self.perfect_squares_available_dict.pop(perfect_square)
 
@@ -695,14 +696,45 @@ class ShoverWorldEnv(Env):
             curr_number_of_lavas (int): 
                 curr number of lavas in the map.
         """
-        # TODO: load the map and shover pos
-        map = None
-        n_rows = None
+        if not os.path.isfile(map_path):
+            raise FileNotFoundError(f"{map_path} not found")
+        
+        file_map = []
+        n_rows = 0
         n_cols = None
-        curr_number_of_boxes = None
-        curr_number_of_barriers = None
-        curr_number_of_lavas = None
-        return map, n_rows, n_cols, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
+        curr_number_of_boxes = 0
+        curr_number_of_barriers = 0
+        curr_number_of_lavas = 0
+
+        with open(map_path, 'r') as file:
+            for line in file:
+                row = []
+                line = line.strip().split()
+
+                for value in line:
+                    value = int(value)
+                    if(value == -100):
+                        row.append(Square(-100, "Lava"))
+                        curr_number_of_lavas += 1
+                    elif(value == 0):
+                        row.append(Square(0, "Empty"))
+                    elif(value > 0 and value <= 10):
+                        row.append(Square(value, "Box"))
+                        curr_number_of_boxes += 1
+                    elif(value == 100):
+                        row.append(Square(value, "Barrier"))
+                        curr_number_of_barriers += 1
+
+                if(n_cols == None):
+                    n_cols = len(row)
+                elif(n_cols != len(row)):
+                    raise ValueError(f"{file_path} columns don't match!")
+
+                file_map.append(row)
+
+        n_rows = len(file_map)
+        
+        return file_map, n_rows, n_cols, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
 
     def _random_map_generation(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas):
         """
@@ -813,7 +845,7 @@ class ShoverWorldEnv(Env):
                     
             # right bar (including outer top-right corner)
             j = top_left_y + n
-            for i in range(top_left_x + n - 1, top_left_x - 1):
+            for i in range(top_left_x - 1, top_left_x + n - 1):
                 if 0 <= i <= (n_rows - 1) and 0 <= j <= (n_cols - 1):
                     if map[i][j].get_square_type() == 'Box':
                        is_perfect_square = False
@@ -826,11 +858,11 @@ class ShoverWorldEnv(Env):
         for i in range(self.n_rows):
             for j in range(self.n_cols):
                 last_perfect_square = None
-                for n in range(1, min(self.n_rows - i, self.n_cols - j)):
+                for n in range(1, min(self.n_rows - i, self.n_cols - j) + 1):
                     if _is_perfect_square(self.map, i, j, n):
                         last_perfect_square = (i, j, n)
                 
                 if last_perfect_square != None:
                     perfect_squares_available.append(last_perfect_square)     
-                
+
         return perfect_squares_available
