@@ -728,7 +728,7 @@ class ShoverWorldEnv(Env):
                 if(n_cols == None):
                     n_cols = len(row)
                 elif(n_cols != len(row)):
-                    raise ValueError(f"{file_path} columns don't match!")
+                    raise ValueError(f"{map_path} columns don't match!")
 
                 file_map.append(row)
 
