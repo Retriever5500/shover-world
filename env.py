@@ -1,5 +1,7 @@
 from gymnasium import *
 import numpy as np
+import copy
+from gui import ShoverGUI
 
 class Square:
     """
@@ -109,8 +111,8 @@ class ShoverWorldEnv(Env):
                 render_mode='human'):
         
         self.metadata = {'render_modes':['human', None], 'render_fps':30}
-        assert not (map_path != None and any([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
-            'if map_path is specified, none of the parameters, related to random map generation should be specified.'
+        assert (map_path == None and all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
+            'specify map_path or map parameters for random map generation.'
         
         assert (map_path != None or all([n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas])), \
             'exactly one of map_path or random map generation parameters, should be specified.'
@@ -155,6 +157,11 @@ class ShoverWorldEnv(Env):
                                                      'stamina':spaces.Box(low=0, high=(2**63)-2, shape=(1,), dtype=float),
                                                      'prev_selected_pos':spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int),
                                                      'prev_selected_action':spaces.Discrete(n=6, start=1, dtype=int)})
+                                                     
+        if(self.render_mode == "human"):
+            self.game = ShoverGUI(self.n_rows, self.n_cols)
+        else:
+            self.game = None
         
     def reset(self, *, seed = None, options = None):
         super().reset(seed=seed, options=options)
@@ -186,6 +193,9 @@ class ShoverWorldEnv(Env):
         perfect_squares_available_list = self._find_perfect_squares()
         for perfect_square in perfect_squares_available_list:
             self.perfect_squares_available_dict[perfect_square] = 0
+
+        if(self.render_mode == "human"):
+            self.render()
 
         return {# observation
                 'map':self._get_map_repr(), 
@@ -574,7 +584,7 @@ class ShoverWorldEnv(Env):
             perfect_squares_available_list = self._find_perfect_squares()
 
             # remove those previous perfect squares which are not available now
-            for perfect_square in self.perfect_squares_available_dict.keys():
+            for perfect_square in set(self.perfect_squares_available_dict.keys()):
                 if perfect_square not in perfect_squares_available_list:
                     self.perfect_squares_available_dict.pop(perfect_square)
 
@@ -597,6 +607,9 @@ class ShoverWorldEnv(Env):
                 self.terminated = True
             if self.time_step == self.max_timestep:
                 self.truncated = True
+
+        if(self.render_mode == "human"):
+            self.render()
         
         return {# observation
                 'map':self._get_map_repr(), 
@@ -617,6 +630,14 @@ class ShoverWorldEnv(Env):
                 'lava_destroyed_this_step':lava_destroyed_this_step, 
                 'perfect_squares_available':self.perfect_squares_available_dict
             }
+
+    def render(self, update=True):
+        if(self.game):
+            self.game.draw(self.map, self.time_step, self.stamina, update=update)
+
+    def close(self):
+        if(self.game):
+            self.game.close()
 
     def _get_target_pos_after_move_action(start_x, start_y, action):
         """Returns the x, y coordinates of the landing square after a move action.
@@ -786,7 +807,7 @@ class ShoverWorldEnv(Env):
                     
             # right bar (including outer top-right corner)
             j = top_left_y + n
-            for i in range(top_left_x + n - 1, top_left_x - 1):
+            for i in range(top_left_x - 1, top_left_x + n - 1):
                 if 0 <= i <= (n_rows - 1) and 0 <= j <= (n_cols - 1):
                     if map[i][j].get_square_type() == 'Box':
                        is_perfect_square = False
@@ -799,11 +820,11 @@ class ShoverWorldEnv(Env):
         for i in range(self.n_rows):
             for j in range(self.n_cols):
                 last_perfect_square = None
-                for n in range(1, min(self.n_rows - i, self.n_cols - j)):
+                for n in range(1, min(self.n_rows - i, self.n_cols - j) + 1):
                     if _is_perfect_square(self.map, i, j, n):
                         last_perfect_square = (i, j, n)
                 
                 if last_perfect_square != None:
                     perfect_squares_available.append(last_perfect_square)     
-                
+
         return perfect_squares_available
