@@ -1,3 +1,4 @@
+import os
 from gymnasium import *
 import numpy as np
 
@@ -668,14 +669,45 @@ class ShoverWorldEnv(Env):
             curr_number_of_lavas (int): 
                 curr number of lavas in the map.
         """
-        # TODO: load the map and shover pos
-        map = None
-        n_rows = None
+        if not os.path.isfile(map_path):
+            raise FileNotFoundError(f"{map_path} not found")
+        
+        file_map = []
+        n_rows = 0
         n_cols = None
-        curr_number_of_boxes = None
-        curr_number_of_barriers = None
-        curr_number_of_lavas = None
-        return map, n_rows, n_cols, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
+        curr_number_of_boxes = 0
+        curr_number_of_barriers = 0
+        curr_number_of_lavas = 0
+
+        with open(map_path, 'r') as file:
+            for line in file:
+                row = []
+                line = line.strip().split()
+
+                for value in line:
+                    value = int(value)
+                    if(value == -100):
+                        row.append(Square(-100, "Lava"))
+                        curr_number_of_lavas += 1
+                    elif(value == 0):
+                        row.append(Square(0, "Empty"))
+                    elif(value > 0 and value <= 10):
+                        row.append(Square(value, "Box"))
+                        curr_number_of_boxes += 1
+                    elif(value == 100):
+                        row.append(Square(value, "Barrier"))
+                        curr_number_of_barriers += 1
+
+                if(n_cols == None):
+                    n_cols = len(row)
+                elif(n_cols != len(row)):
+                    raise ValueError(f"{file_path} columns don't match!")
+
+                file_map.append(row)
+
+        n_rows = len(file_map)
+        
+        return file_map, n_rows, n_cols, curr_number_of_boxes, curr_number_of_barriers, curr_number_of_lavas
 
     def _random_map_generation(n_rows, n_cols, number_of_boxes, number_of_barriers, number_of_lavas):
         """
