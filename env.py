@@ -194,6 +194,9 @@ class ShoverWorldEnv(Env):
         for perfect_square in perfect_squares_available_list:
             self.perfect_squares_available_dict[perfect_square] = 0
 
+        self.last_action_valid = False
+        self.chain_length_k = 0
+
         if(self.render_mode == "human"):
             self.render()
 
@@ -608,6 +611,9 @@ class ShoverWorldEnv(Env):
             if self.time_step == self.max_timestep:
                 self.truncated = True
 
+        self.last_action_valid = is_action_valid
+        self.chain_length_k = chain_length_k
+
         if(self.render_mode == "human"):
             self.render()
         
@@ -633,7 +639,7 @@ class ShoverWorldEnv(Env):
 
     def render(self, update=True):
         if(self.game):
-            self.game.draw(self.map, self.time_step, self.stamina, update=update)
+            self.game.draw(self.map, self.time_step, self.stamina, self.chain_length_k, self.last_action_valid, update=update)
 
     def close(self):
         if(self.game):

@@ -2,7 +2,6 @@ from pynput import keyboard, mouse
 import pygame
 import threading
 from time import sleep
-
 class ShoverGUI:
     TILE_SIZE = 50
     MARGIN = 10
@@ -25,7 +24,7 @@ class ShoverGUI:
         self.current_world = None
         self.last_update = 0
 
-    def draw(self, world, current_timestep, stamina, frames=10, update=True):
+    def draw(self, world, current_timestep, stamina, chain_length, is_action_valid, frames=10, update=True):
         clock = pygame.time.Clock()
         if(update):
             self.last_update = frames
@@ -37,7 +36,7 @@ class ShoverGUI:
             ratio = self.last_update / frames
             self.last_update = max(0, self.last_update - 1)
             self._draw_grid(world, ratio)  # Draw the grid
-            self._draw_bar(current_timestep, stamina)
+            self._draw_bar(current_timestep, stamina, chain_length, is_action_valid)
             pygame.display.flip()  # Update the display
 
             clock.tick(self.FPS)
@@ -102,12 +101,16 @@ class ShoverGUI:
                     # Draw the text on the screen
                     self.screen.blit(text_surface, text_rect)
 
-    def _draw_bar(self, current_step, stamina):
+    def _draw_bar(self, current_step, stamina, chain_length, is_action_valid):
         # Define text properties
         font_color = (255, 255, 255)  # White
-        font_size = 38
+        font_size = 24
         font = pygame.font.SysFont('Arial', font_size)
-        text_to_display = f"Current Step: {current_step}   Stamina: {stamina}"
+        text_to_display = f"Current Step: {current_step}   Stamina: {stamina}   Chain length: {chain_length}"
+        if(is_action_valid):
+            text_to_display += "   Valid Action"
+        else:
+            text_to_display += "   Invalid Action"
 
         # Render the text
         text_surface = font.render(text_to_display, True, font_color)
