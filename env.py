@@ -90,7 +90,7 @@ class ShoverWorldEnv(Env):
                                             2:'right', \
                                             3:'down', \
                                             4:'left', \
-                                            5:'barrier_marker', \
+                                            5:'barrier_maker', \
                                             6:'hellify'}):
             A dictionary, mapping action values to verbose descriptions; 
             we will work with verbose descriptions rather than action values.
@@ -106,7 +106,7 @@ class ShoverWorldEnv(Env):
                 number_of_barriers=None, 
                 number_of_lavas=None, 
                 r_lava=None,
-                r_barrier_marker=None,
+                r_barrier_maker=None,
                 initial_stamina=1000, 
                 max_timestep=400, 
                 map_path=None, 
@@ -133,7 +133,7 @@ class ShoverWorldEnv(Env):
         self.initial_force = initial_force
         self.unit_force = unit_force
         self.r_lava = r_lava if r_lava != None else initial_force
-        self.r_barrier_marker = (lambda n: (r_barrier_marker if r_barrier_marker != None else 10 * n * n))
+        self.r_barrier_maker = (lambda n: (r_barrier_maker if r_barrier_maker != None else 10 * n * n))
         self.perf_sq_initial_age = perf_sq_initial_age
         self.initial_stamina = initial_stamina
         self.max_timestep = max_timestep
@@ -492,9 +492,9 @@ class ShoverWorldEnv(Env):
                             # maintenance of stamina
                             self.stamina -= push_cost
             
-            # Hellify or Barrier Marker actions
+            # Hellify or Barrier maker actions
             else:
-                # Barrier Marker
+                # Barrier maker
                 if selected_action == 5:
                     # checking whether if these is at least a perfect square such that n >= 2
                     perf_sqr_for_mark_exists = False
@@ -530,7 +530,7 @@ class ShoverWorldEnv(Env):
                         self.curr_number_of_barriers += n * n
                         self.destroyed_number_of_boxes += n * n
 
-                        reward += self.r_barrier_marker(n)
+                        reward += self.r_barrier_maker(n)
                 
                 # Hellify
                 else:
