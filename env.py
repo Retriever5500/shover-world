@@ -66,34 +66,26 @@ class ShoverWorldEnv(Env):
         n_cols (int): Width of the grid world. Any ``a * b`` map size is supported.
         max_timestep (int, default=400):
             Maximum number of steps per episode. The episode truncates after this limit.
-        number_of_boxes (int, default=0):
+        number_of_boxes (int, default=None):
             Number of movable box obstacles placed during random map generation.
-        number_of_barriers (int, default=0):
+        number_of_barriers (int, default=None):
             Number of impassable barrier cells placed during random map generation.
-        number_of_lavas (int, default=0):
+        number_of_lavas (int, default=None):
             Number of hazardous lava cells placed during random map generation.
         initial_stamina (int, default=1000):
             Initial stamina value assigned to the agent at the start of each episode.
-        initial_force (float, default=1.0):
+        initial_force (float, default=40):
             Base positive scalar used in the stamina cost calculation
             (see environment mechanics documentation).
-        unit_force (float, default=1.0):
+        unit_force (float, default=10):
             Per-cell positive scalar used in the stamina cost calculation
             (see environment mechanics documentation).
-        perf_sq_initial_age (int, default=10):
+        perf_sq_initial_age (int, default=5):
             Initial age of perfect-square tiles. These tiles automatically dissolve
             after reaching a certain number of steps.
         map_path (str | None, default=None):
             Path to a predefined map file (e.g., ``.txt``). If provided,
             random map generation is skipped and this map is loaded instead.
-        action_map (dict[int, str], default={1:'up', \
-                                            2:'right', \
-                                            3:'down', \
-                                            4:'left', \
-                                            5:'barrier_marker', \
-                                            6:'hellify'}):
-            A dictionary, mapping action values to verbose descriptions; 
-            we will work with verbose descriptions rather than action values.
 
     """
     def __init__(self, 
@@ -106,7 +98,7 @@ class ShoverWorldEnv(Env):
                 number_of_barriers=None, 
                 number_of_lavas=None, 
                 r_lava=None,
-                r_barrier_marker=None,
+                r_barrier_maker=None,
                 initial_stamina=1000, 
                 max_timestep=400, 
                 map_path=None, 
@@ -133,7 +125,7 @@ class ShoverWorldEnv(Env):
         self.initial_force = initial_force
         self.unit_force = unit_force
         self.r_lava = r_lava if r_lava != None else initial_force
-        self.r_barrier_marker = (lambda n: (r_barrier_marker if r_barrier_marker != None else 10 * n * n))
+        self.r_barrier_maker = (lambda n: (r_barrier_maker if r_barrier_maker != None else 10 * n * n))
         self.perf_sq_initial_age = perf_sq_initial_age
         self.initial_stamina = initial_stamina
         self.max_timestep = max_timestep
@@ -152,7 +144,9 @@ class ShoverWorldEnv(Env):
         self.destroyed_number_of_boxes = None
         self.perfect_squares_available_dict = None # key=(top_left_x, top_left_y, n), value=perfect_square_age
 
-        self.action_space = spaces.Tuple(spaces=[spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int), spaces.Discrete(n=6, start=1, dtype=int)])
+        action_pos_low = np.array([0, 0])
+        action_pos_high = np.array([self.n_rows-1, self.n_cols-1])
+        self.action_space = spaces.Tuple(spaces=[spaces.Box(low=action_pos_low, high=action_pos_high, shape=(2,), dtype=int), spaces.Discrete(n=6, start=1, dtype=int)])
         self.observation_space = spaces.Dict(spaces={'map':spaces.Box(low=-100, high=100, shape=(self.n_rows, self.n_cols,), dtype=int), 
                                                      'stamina':spaces.Box(low=0, high=(2**63)-2, shape=(1,), dtype=float),
                                                      'prev_selected_pos':spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int),
@@ -490,9 +484,9 @@ class ShoverWorldEnv(Env):
                             # maintenance of stamina
                             self.stamina -= push_cost
             
-            # Hellify or Barrier Marker actions
+            # Hellify or Barrier maker actions
             else:
-                # Barrier Marker
+                # Barrier maker
                 if selected_action == 5:
                     # checking whether if these is at least a perfect square such that n >= 2
                     perf_sqr_for_mark_exists = False
@@ -528,7 +522,7 @@ class ShoverWorldEnv(Env):
                         self.curr_number_of_barriers += n * n
                         self.destroyed_number_of_boxes += n * n
 
-                        reward += self.r_barrier_marker(n)
+                        reward += self.r_barrier_maker(n)
                 
                 # Hellify
                 else:
