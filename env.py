@@ -152,7 +152,9 @@ class ShoverWorldEnv(Env):
         self.destroyed_number_of_boxes = None
         self.perfect_squares_available_dict = None # key=(top_left_x, top_left_y, n), value=perfect_square_age
 
-        self.action_space = spaces.Tuple(spaces=[spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int), spaces.Discrete(n=6, start=1, dtype=int)])
+        action_pos_low = np.array([0, 0])
+        action_pos_high = np.array([self.n_rows-1, self.n_cols-1])
+        self.action_space = spaces.Tuple(spaces=[spaces.Box(low=action_pos_low, high=action_pos_high, shape=(2,), dtype=int), spaces.Discrete(n=6, start=1, dtype=int)])
         self.observation_space = spaces.Dict(spaces={'map':spaces.Box(low=-100, high=100, shape=(self.n_rows, self.n_cols,), dtype=int), 
                                                      'stamina':spaces.Box(low=0, high=(2**63)-2, shape=(1,), dtype=float),
                                                      'prev_selected_pos':spaces.Box(low=0, high=max(self.n_rows, self.n_cols) - 1, shape=(2,), dtype=int),
