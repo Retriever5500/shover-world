@@ -26,14 +26,13 @@ The `ShoverWorldEnv` class defines a grid-world environment designed for an agen
 | `n_rows`                     | int              | None           | Defines the height of the grid world. The agent navigates within this vertical structure.                             |
 | `n_cols`                     | int              | None           | Defines the width of the grid world. The agent navigates within this horizontal structure.                          |
 | `max_timestep`               | int              | 400            | The maximum number of steps allowed in an episode. The episode will automatically truncate once this limit is reached. |
-| `number_of_boxes`            | int              | 0              | The quantity of movable boxes introduced during random map generation.                                                   |
-| `number_of_barriers`         | int              | 0              | The count of impassable barriers placed in the environment during random generation.                                   |
-| `number_of_lavas`            | int              | 0              | The number of hazardous lava cells that may pose a risk to the agent during navigation.                                    |
+| `number_of_boxes`            | int              | None              | The quantity of movable boxes introduced during random map generation.                                                   |
+| `number_of_barriers`         | int              | None              | The count of impassable barriers placed in the environment during random generation.                                   |
+| `number_of_lavas`            | int              | None              | The number of hazardous lava cells that may pose a risk to the agent during navigation.                                    |
 | `initial_stamina`            | int              | 1000           | The stamina level assigned to the agent at the beginning of each episode.                                                          |
-| `initial_force`              | float            | 1.0            | The base scalar applied in the stamina cost calculations which influences the agent's performance.                        |
-| `unit_force`                 | float            | 1.0            | The scalar applied per cell in stamina cost calculations, impacting energy expenditure based on movement.                 |
-| `perf_sq_initial_age`        | int              | 10             | Determines the initial age of perfect-square tiles, which dissolve after a defined age limit.                               |
+| `initial_force`              | float            | 40           | The base scalar applied in the stamina cost calculations which influences the agent's performance.                        |
+| `unit_force`                 | float            | 10            | The scalar applied per cell in stamina cost calculations, impacting energy expenditure based on movement.                 |
+| `perf_sq_initial_age`        | int              | 5             | Determines the initial age of perfect-square tiles, which dissolve after a defined age limit.                               |
 | `map_path`                   | str | None       | None           | Specifies the path to a predefined map file (e.g., `.txt`). If provided, random map generation will not occur.        |
-| `action_map`                 | dict[int, str]   | {1: 'up', 2: 'right', 3: 'down', 4: 'left', 5: 'barrier_marker', 6: 'hellify'} | Maps integers to action descriptions for clarity in interaction rather than using numeric values.                       |
 
 ---
