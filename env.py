@@ -66,34 +66,26 @@ class ShoverWorldEnv(Env):
         n_cols (int): Width of the grid world. Any ``a * b`` map size is supported.
         max_timestep (int, default=400):
             Maximum number of steps per episode. The episode truncates after this limit.
-        number_of_boxes (int, default=0):
+        number_of_boxes (int, default=None):
             Number of movable box obstacles placed during random map generation.
-        number_of_barriers (int, default=0):
+        number_of_barriers (int, default=None):
             Number of impassable barrier cells placed during random map generation.
-        number_of_lavas (int, default=0):
+        number_of_lavas (int, default=None):
             Number of hazardous lava cells placed during random map generation.
         initial_stamina (int, default=1000):
             Initial stamina value assigned to the agent at the start of each episode.
-        initial_force (float, default=1.0):
+        initial_force (float, default=40):
             Base positive scalar used in the stamina cost calculation
             (see environment mechanics documentation).
-        unit_force (float, default=1.0):
+        unit_force (float, default=10):
             Per-cell positive scalar used in the stamina cost calculation
             (see environment mechanics documentation).
-        perf_sq_initial_age (int, default=10):
+        perf_sq_initial_age (int, default=5):
             Initial age of perfect-square tiles. These tiles automatically dissolve
             after reaching a certain number of steps.
         map_path (str | None, default=None):
             Path to a predefined map file (e.g., ``.txt``). If provided,
             random map generation is skipped and this map is loaded instead.
-        action_map (dict[int, str], default={1:'up', \
-                                            2:'right', \
-                                            3:'down', \
-                                            4:'left', \
-                                            5:'barrier_maker', \
-                                            6:'hellify'}):
-            A dictionary, mapping action values to verbose descriptions; 
-            we will work with verbose descriptions rather than action values.
 
     """
     def __init__(self, 
