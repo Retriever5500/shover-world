@@ -36,3 +36,7 @@ The `ShoverWorldEnv` class defines a grid-world environment designed for an agen
 | `map_path`                   | str | None       | None           | Specifies the path to a predefined map file (e.g., `.txt`). If provided, random map generation will not occur.        |
 
 ---
+
+### References:
+- [gymnasium](https://gymnasium.farama.org/)
+- [pygame](https://www.pygame.org)
