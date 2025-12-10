@@ -140,7 +140,7 @@ def ShoverHUD(env):
     def get_input():
         nonlocal current_input
         running = True
-        while running:
+        while running :
             with keyboard.Events() as events:
                 for event in events:
                     if event is None:
@@ -177,7 +177,9 @@ def ShoverHUD(env):
             continue
 
         if(0 < current_input and current_input <= 6):
-            env.step((env.game.agent_pos, current_input))
+            _, _, terminated, trunc, _ = env.step((env.game.agent_pos, current_input))
+            if terminated or trunc:
+                env.reset()
             current_input = None
         elif(current_input == 7):
             env.reset()
