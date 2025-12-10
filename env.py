@@ -319,6 +319,7 @@ class ShoverWorldEnv(Env):
 
                                 # maintenance of stamina
                                 self.stamina -= push_cost
+                                self.stamina += self.initial_force
 
                                 reward += self.r_lava
                             
