@@ -141,8 +141,8 @@ class ShoverWorldEnv(Env):
         self.curr_number_of_boxes = None
         self.curr_number_of_barriers = None
         self.curr_number_of_lavas = None
-        self.destroyed_number_of_boxes = None
         self.perfect_squares_available_dict = None # key=(top_left_x, top_left_y, n), value=perfect_square_age
+        self.moved_any_last_step = None
 
         action_pos_low = np.array([0, 0])
         action_pos_high = np.array([self.n_rows-1, self.n_cols-1])
@@ -181,8 +181,8 @@ class ShoverWorldEnv(Env):
                                                                                     self.number_of_lavas)
         self.time_step = 0
         self.stamina = self.initial_stamina
-        self.destroyed_number_of_boxes = 0
         self.perfect_squares_available_dict = dict()
+        self.moved_any_last_step = False
         
         perfect_squares_available_list = self._find_perfect_squares()
         for perfect_square in perfect_squares_available_list:
@@ -203,7 +203,7 @@ class ShoverWorldEnv(Env):
             {# info
                 'timestep':self.time_step,
                 'current_number_of_boxes':self.curr_number_of_boxes, 
-                'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
+                'destroyed_number_of_boxes':self.number_of_boxes - self.curr_number_of_boxes, 
                 'last_action_valid':False, 
                 'chain_length_k':0, 
                 'initial_force_applied':False, 
@@ -268,6 +268,7 @@ class ShoverWorldEnv(Env):
         initial_force_applied = False
         lava_destroyed_this_step = False
         reward = 0
+        moved_any_this_step = False
 
         make_non_stationary_dict = dict() # a dictionary which contains positions to make non-stationary as keys and the direction to make non-stationary in as values
 
@@ -303,6 +304,8 @@ class ShoverWorldEnv(Env):
 
                                 # maintenance of stamina
                                 self.stamina -= push_cost
+
+                                moved_any_this_step = True
                             
                         # moving a single Box into a Lava square 
                         elif target_obj_square_type == 'Lava':
@@ -313,14 +316,16 @@ class ShoverWorldEnv(Env):
                                 initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                 lava_destroyed_this_step = True
                                 self.curr_number_of_boxes -= 1
-                                self.destroyed_number_of_boxes += 1
 
                                 self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
 
                                 # maintenance of stamina
                                 self.stamina -= push_cost
+                                self.stamina += self.initial_force
 
                                 reward += self.r_lava
+
+                                moved_any_this_step = True
                             
                         # pusing a single Box into a Barrier square 
                         elif target_obj_square_type == 'Barrier':
@@ -381,6 +386,8 @@ class ShoverWorldEnv(Env):
 
                                         # maintenance of stamina
                                         self.stamina -= push_cost
+
+                                        moved_any_this_step = True
                                     
                                 # moving a chain of Boxes into a Lava sqaure
                                 elif target_obj.get_square_type() == 'Lava':
@@ -389,7 +396,6 @@ class ShoverWorldEnv(Env):
                                         is_action_valid = True
                                         lava_destroyed_this_step = True
                                         self.curr_number_of_boxes -= 1
-                                        self.destroyed_number_of_boxes += 1
                                         initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                                         
                                         # if the target square lies above the chain
@@ -420,8 +426,11 @@ class ShoverWorldEnv(Env):
 
                                         # maintenance of stamina
                                         self.stamina -= push_cost
+                                        self.stamina += self.initial_force
 
                                         reward += self.r_lava
+
+                                        moved_any_this_step = True
 
                                 # moving a chain of Boxes into a Barrier sqaure
                                 elif target_obj.get_square_type() == 'Barrier':
@@ -468,6 +477,11 @@ class ShoverWorldEnv(Env):
 
                                     # maintenance of stamina
                                     self.stamina -= push_cost
+                                    self.stamina += self.initial_force
+
+                                    reward += self.r_lava
+
+                                    moved_any_this_step = True
 
                     # the target sqaure is out-bounds
                     else:
@@ -477,12 +491,16 @@ class ShoverWorldEnv(Env):
                             chain_length_k = 1
                             initial_force_applied = not selected_obj.is_non_stationary_in_d(selected_action)
                             self.curr_number_of_boxes -= 1
-                            self.destroyed_number_of_boxes += 1
 
                             self.map[selected_pos_x][selected_pos_y] = Square(val=0, btype='Empty')
 
                             # maintenance of stamina
                             self.stamina -= push_cost
+                            self.stamina += self.initial_force
+
+                            reward += self.r_lava
+
+                            moved_any_this_step = True
             
             # Hellify or Barrier maker actions
             else:
@@ -520,7 +538,6 @@ class ShoverWorldEnv(Env):
                         # update current number of boxes, barriers, and destroyed number of boxes
                         self.curr_number_of_boxes -= n * n
                         self.curr_number_of_barriers += n * n
-                        self.destroyed_number_of_boxes += n * n
 
                         reward += self.r_barrier_maker(n)
                 
@@ -567,7 +584,6 @@ class ShoverWorldEnv(Env):
 
                         # update current number of Boxes and Lavas
                         self.curr_number_of_boxes -= n * n
-                        self.destroyed_number_of_boxes += n * n
                         self.curr_number_of_lavas += (n - 2) * (n - 2)
 
             # maintenance of time_step
@@ -597,16 +613,16 @@ class ShoverWorldEnv(Env):
             # apply automatic dissolution for aged perfect squares
             destroyed_num_of_boxes_in_automatic_dissolution = _automatic_dissolution(self.perfect_squares_available_dict, self.map, self.perf_sq_initial_age)
             self.curr_number_of_boxes -= destroyed_num_of_boxes_in_automatic_dissolution
-            self.destroyed_number_of_boxes += destroyed_num_of_boxes_in_automatic_dissolution
 
             # check for termination or truncation conditions
-            if self.curr_number_of_boxes == 0 or self.stamina == 0:
+            if self.curr_number_of_boxes == 0 or self.stamina == 0 or (not (self.moved_any_last_step or moved_any_this_step) and (self.stamina < self.initial_force)):
                 self.terminated = True
             if self.time_step == self.max_timestep:
                 self.truncated = True
 
         self.last_action_valid = is_action_valid
         self.chain_length_k = chain_length_k
+        self.moved_any_last_step = moved_any_this_step
 
         if(self.render_mode == "human"):
             self.render()
@@ -623,7 +639,7 @@ class ShoverWorldEnv(Env):
             {# info
                 'timestep':self.time_step,
                 'current_number_of_boxes':self.curr_number_of_boxes, 
-                'destroyed_number_of_boxes':self.destroyed_number_of_boxes, 
+                'destroyed_number_of_boxes':self.number_of_boxes - self.curr_number_of_boxes, 
                 'last_action_valid':is_action_valid, 
                 'chain_length_k':chain_length_k, 
                 'initial_force_applied':initial_force_applied, 
